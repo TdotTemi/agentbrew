@@ -8,9 +8,7 @@ github-mcp-maintained-server-without-launcher
 measure-plain-language-output-across-managed-agents
 extract-shared-2134-skill-contract-test-helpers
 index-gstack-niche-skills
-re-promote-ask-human-mcp-after-stdio-fix
 companion-branch-stomp-protection
-refresh-competitor-vercel-skills-cli-vs-agentbrew
 
 # 2026-10-15 /review-tasks: these pre-gate tasks were invisible to the rule-9 lint
 # because they used bare `**Field**:` lines, which parsers ignore. The tasks-md
@@ -24,13 +22,9 @@ agentfile-hooks-async-rewake-control-fields
 restore-agentbrew-release-automation
 install-mcp-env-sanitize-strips-vars-and-y-flag
 workspace-aware-sync
-replace-relocate-update-tooling-catalog-pointer
 reconcile-skill-source-dirs-with-agentfile-sources
-replace-relocate-source-manifest-bootstrap
-agentfile-claude-session-settings-sync
 first-run-offline-warmup
 bridle-opencode-path-issue
 ecosystem-contrib-managed-section-convention
-contribute-support-issue-283-declarative-manifest
 contribute-trust-building-pr-skills-cli
 contribute-rfc-comment-issues-268-455-user-safety-classifier

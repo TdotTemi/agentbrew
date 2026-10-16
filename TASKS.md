@@ -394,6 +394,7 @@
     This is low-priority, low-investment, ecosystem-hygiene work. Skip if Caliber or another tool beats us to it — the goal is alignment, not authorship.
   - **Files**: `docs/specs/managed-section-markers.md` (new) or a gist / standalone repo, upstream PRs to Caliber / other tools.
   - **Acceptance**: (a) spec document exists with the 5 sections above; (b) VISION.md links to it; (c) at least one upstream PR filed linking to the spec — accept the result whether merged or not (author goodwill + visibility matters more than the merge).
+  - **Research**: 2026-10-16 — (a) and (b) are done: the spec is [`docs/specs/managed-section-markers.md`](docs/specs/managed-section-markers.md) and VISION.md links it. Caliber already uses `<!-- caliber:managed:<section> -->`, the proposed format. The first upstream ask is staged in [`docs/audits/managed-section-markers-upstream-draft.md`](docs/audits/managed-section-markers-upstream-draft.md); only (c), the approved `gh issue create` on `caliber-ai-org/ai-setup`, remains.
   - **Human-approval-required**: external-pr
 
 - [ ] Trust-building PRs on vercel-labs/skills from the drafts staged in `fyodoriv/skills`
@@ -454,62 +455,8 @@
     If any of the 4 open PRs merges with the classifier design, close this task — the contribution has landed. If none merge and the queue grows further (a 5th community PR appears), escalate by commenting on issue #268 asking Andrew Qu / Elliot Liu for architectural direction on which PR they'd be willing to review.
   - **Files**: upstream issues at vercel-labs/skills (no agentbrew files).
   - **Acceptance**: (a) a substantive RFC-style comment is posted on BOTH #268 and #455 with the 5-case taxonomy and the invariant statement; (b) the comment links to the exact `src/sync/skills-sync.ts` `cleanEntry` reference and explicitly states "not filing a PR"; (c) if any of the 4 open PRs (#609, #611, #869, #944) subsequently merges with a classifier design, close this task with a link to the merge in the commit message; (d) if the queue stays stuck for another 4 weeks post-comment, the escalation comment on #268 asking for architectural direction is posted.
+  - **Research**: 2026-10-16 — #268, #455, #606, #609, and #611 are still open; #869 merged but only preserves dotfiles in copied skills; #944 closed. No classifier has landed. Both comment texts are staged in [`docs/audits/skills-cli-268-455-rfc-comment-draft.md`](docs/audits/skills-cli-268-455-rfc-comment-draft.md) with the posting steps; the only remaining step is the approved `gh issue comment`.
   - **Human-approval-required**: external-issue
-
-- [ ] Companion-researcher needs working-tree branch-stomp protection
-  - **ID**: companion-branch-stomp-protection
-  - **Tags**: skills, companion, git-safety, multi-agent
-  - **Details**: In the 2026-05-21 companion-researcher session, the
-    worker's session called `git checkout <their-branch>` in the
-    shared agentbrew working tree TWICE while the companion agent
-    was mid-edit. Each time, the companion's next `git commit`
-    landed on the worker's branch instead of the intended companion
-    branch (and once even pushed to the worker's PR before being
-    caught).
-
-    Recovery steps that worked (cherry-pick + revert):
-    1. `git checkout <my-companion-branch>`
-    2. `git cherry-pick <bad-commit-on-worker-branch>` → lands on
-       my branch.
-    3. `git checkout <worker-branch>`
-    4. `git revert --no-edit <bad-commit>` → adds a revert commit
-       on the worker's branch so net diff is zero.
-    5. `git push` both branches.
-    6. `git checkout <my-companion-branch>` to resume work.
-
-    This works but: (a) requires the companion to NOTICE the wrong
-    branch before pushing, (b) leaves two unexplained commits on the
-    worker's PR, (c) the worker may force-push and lose the revert.
-
-    Real fix: companion-researcher SKILL.md should require
-    re-verifying `git branch --show-current` BEFORE every `git
-    commit` and `git push`, not just at session start. Add this as
-    a hard rule in the umbrella's Safety Rules section ("Verify
-    branch before every commit and push — `git branch --show-current`
-    is cheap and catches branch-stomps").
-
-    Better fix (longer-term): the companion should operate in a
-    git worktree (separate filesystem location) rather than the
-    shared working tree. The `obra/superpowers/using-git-worktrees`
-    skill describes the pattern. Worktrees give each agent its own
-    HEAD pointer, eliminating the branch-stomp class of bug
-    entirely. Tradeoff: extra disk space (~one full checkout per
-    companion session) and slightly more setup. For active
-    multi-agent workflows the disk cost is worth it.
-
-  - **Files**:
-    skill-plugins/workflow/companion-researcher/SKILL.md (add the branch-
-    verification rule); optionally skill-plugins/workflow/companion-*/
-    SKILL.md (each sub-skill could also assert the branch before
-    write operations).
-  - **Acceptance**:
-    Either (a) every companion-* SKILL.md has an explicit "verify
-    branch before commit + push" step in its Safety Rules section,
-    AND a pressure-test subagent can be shown the trap (worker
-    switches branch mid-edit) and recover correctly. Or (b) the
-    companion-researcher umbrella migrates to using `git worktree
-    add` for its session checkout, isolating it from the worker
-    entirely.
 
 - [ ] `agentbrew setup opencode` writes a model and provider shape current opencode accepts
   - **ID**: opencode-bootstrap-config-shape

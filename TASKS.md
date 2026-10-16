@@ -236,13 +236,6 @@
 
 ## P3
 
-- [ ] Extend the dash-pattern hook lint to rg, variable, and unquoted patterns
-  - **ID**: hooks-dashdash-lint-coverage
-  - **Tags**: scout, hooks, bug-class, robustness
-  - **Details**: The `lint-security.sh` check added with `hooks-grep-dashdash-pattern` flags only a quoted literal that starts with `-` after `grep`. It does not see `rg` calls, patterns held in variables, or unquoted patterns. Audit showed none exist today, so this guards future drift only. Consider a ShellCheck rule or a small wrapper before adding more regex.
-  - **Files**: `scripts/lint-security.sh`
-  - **Acceptance**: A fixture hook script using each missed form fails the lint, and the current hook scripts still pass it.
-
 - [ ] Make catalog MCP pin policy data-driven instead of source-hardcoded
   - **ID**: catalog-mcp-pin-policy-data-driven
   - **Tags**: scout, mcp, catalog, config-drift
@@ -339,13 +332,6 @@
   - **Details**: `package.json` pins `basic-ftp` to 6.2.3 through `overrides` because `get-uri@8` asks for `^5.3.1`, and 5.x has an open denial-of-service advisory. Remove the override when `get-uri` (via `promptfoo` > `proxy-agent`) widens its range to a patched release, so the pin stops hiding upstream drift.
   - **Files**: package.json, package-lock.json
   - **Acceptance**: (1) the `basic-ftp` entry is gone from `overrides`; (2) `npm audit` stays free of high findings from `basic-ftp`.
-
-- [ ] Show the total heal attempt count in `agentbrew status --verbose`
-  - **ID**: mcp-status-heal-attempt-count
-  - **Tags**: scout, mcp, status
-  - **Details**: The snapshot now keeps a capped history plus `healAttemptCount`. Nothing reads the count yet, so an operator cannot see that one pair churns while most attempts are trimmed. Print it for pairs with many attempts.
-  - **Files**: src/status.ts, src/status.test.ts
-  - **Acceptance**: a pair with more attempts than the history cap shows its total in verbose status; a test covers it.
 
 - [ ] `agentbrew status` names helper scripts that sync kept or could not install
   - **ID**: status-reports-helper-scripts

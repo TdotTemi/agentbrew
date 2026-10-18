@@ -64,6 +64,15 @@ cat > "$METRICS_DIR/latest.json" <<'JSON'
   }
 }
 JSON
+# Version-manager shims (Volta, asdf) find node under $HOME; pin the real binary first.
+# Link only node: the real node dir can also hold a global agentbrew, which would
+# hide the missing-CLI path this test guards.
+NODE_BIN="$(node -p 'process.execPath' 2>/dev/null || true)"
+if [ -n "$NODE_BIN" ]; then
+  mkdir -p "$TMP/node-bin"
+  ln -sf "$NODE_BIN" "$TMP/node-bin/node"
+  export PATH="$TMP/node-bin:$PATH"
+fi
 export HOME="$TMP"
 T5_RC=$(printf '%s' '{"hook_event_name":"SessionStart"}' | bash "$SCRIPT" 2>"$TMP/stderr.txt"; echo $?)
 T5_ERR=$(cat "$TMP/stderr.txt" 2>/dev/null || true)

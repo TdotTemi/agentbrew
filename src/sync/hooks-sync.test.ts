@@ -380,6 +380,45 @@ describe("mergeHooksConfig", () => {
     const { merged } = mergeHooksConfig(existing, {}, new Set(["Stop:*"]), { deployDir: "/deploy" });
     expect(merged.Stop).toEqual([{ hooks: [{ type: "command", command: "bash ~/my/inventory.sh" }] }]);
   });
+
+  it("updates and prunes agentbrew hooks in a shared group but keeps the person's hook", () => {
+    const existing = {
+      Stop: [
+        {
+          hooks: [
+            { type: "command" as const, command: "bash ~/my/inventory.sh" },
+            { type: "command" as const, command: "bash /deploy/stale.sh" },
+          ],
+        },
+        { matcher: "*", hooks: [{ type: "command" as const, command: "bash /deploy/old-name.sh" }] },
+      ],
+    };
+    const desired = {
+      Stop: [{ matcher: "*", hooks: [{ type: "command" as const, command: "bash /deploy/new-name.sh" }] }],
+    };
+    const { merged } = mergeHooksConfig(existing, desired, new Set(["Stop:*"]), {
+      previousManagedIds: new Set(["Stop:* bash /deploy/stale.sh", "Stop:* bash /deploy/old-name.sh"]),
+    });
+    expect(merged.Stop).toEqual([
+      { hooks: [{ type: "command", command: "bash ~/my/inventory.sh" }] },
+      { matcher: "*", hooks: [{ type: "command", command: "bash /deploy/new-name.sh" }] },
+    ]);
+  });
+
+  it("replaces an agentbrew hook that a post-sync step put behind a wrapper", () => {
+    // dotfiles wraps deployed Cursor hooks: "<wrapper> <agentbrew command>".
+    // That hook is still agentbrew's, so sync must not keep it next to the new copy.
+    const existing = {
+      stop: [{ matcher: "*", hooks: [{ type: "command" as const, command: "/opt/wrap.sh bash /deploy/a.sh" }] }],
+    };
+    const desired = {
+      stop: [{ matcher: "*", hooks: [{ type: "command" as const, command: "bash /deploy/a.sh" }] }],
+    };
+    const { merged } = mergeHooksConfig(existing, desired, new Set(["stop:*"]), {
+      previousManagedIds: new Set(["stop:* bash /deploy/a.sh"]),
+    });
+    expect(merged.stop).toEqual(desired.stop);
+  });
 });
 
 describe("computeHooksDiff", () => {

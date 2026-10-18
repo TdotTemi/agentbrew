@@ -136,8 +136,6 @@ export function toCursorHooksConfig(config: ClaudeHooksConfig): ClaudeHooksConfi
   return Object.fromEntries(Object.entries(config).map(([event, groups]) => [cursorEventName(event), groups]));
 }
 
-/** Merge managed hooks into existing hooks config, preserving user hooks.
- *  Returns the merged config and the set of managed keys. */
 /** Identity of one deployed hook item: "event:matcher command" (or prompt). */
 export function hookItemId(event: string, matcher: string | undefined, item: ClaudeHookItem): string {
   return `${hookKey(event, matcher)} ${item.command ?? item.prompt ?? ""}`;
@@ -150,6 +148,21 @@ export function managedHookIdsForConfig(config: ClaudeHooksConfig): string[] {
   );
 }
 
+/** True when `ids` holds this hook, also when a post-sync step put a wrapper
+ *  in front of its command (`wrapper.sh bash hook.sh`). */
+function hasHookId(ids: Set<string>, event: string, matcher: string | undefined, item: ClaudeHookItem): boolean {
+  const id = hookItemId(event, matcher, item);
+  if (ids.has(id)) return true;
+  const prefix = `${hookKey(event, matcher)} `;
+  const text = id.slice(prefix.length);
+  for (const known of ids) {
+    if (!known.startsWith(prefix)) continue;
+    const knownText = known.slice(prefix.length);
+    if (knownText !== "" && text.endsWith(` ${knownText}`)) return true;
+  }
+  return false;
+}
+
 /**
  * Merge desired (agentbrew-managed) hooks into the existing config.
  *
@@ -160,7 +173,8 @@ export function managedHookIdsForConfig(config: ClaudeHooksConfig): string[] {
  * a recorded id list (older manifests), agentbrew keeps its old rule for
  * groups with an explicit matcher (it always writes one), and in a group with
  * no matcher a hook counts as agentbrew's only if it is desired now or runs a
- * script from `deployDir`.
+ * script from `deployDir`. A command behind a wrapper prefix still counts as
+ * agentbrew's, so a wrapped copy is replaced, not kept next to the new one.
  */
 export function mergeHooksConfig(
   existing: ClaudeHooksConfig,
@@ -173,9 +187,8 @@ export function mergeHooksConfig(
   const desiredIds = new Set(managedHookIdsForConfig(desired));
   const deployDir = options.deployDir ?? defaultDeployDir();
   const isAgentbrewHook = (event: string, matcher: string | undefined, item: ClaudeHookItem): boolean => {
-    const id = hookItemId(event, matcher, item);
-    if (desiredIds.has(id)) return true;
-    if (options.previousManagedIds) return options.previousManagedIds.has(id);
+    if (hasHookId(desiredIds, event, matcher, item)) return true;
+    if (options.previousManagedIds) return hasHookId(options.previousManagedIds, event, matcher, item);
     return matcher !== undefined || (item.command ?? "").includes(deployDir);
   };
 

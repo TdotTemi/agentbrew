@@ -49,21 +49,25 @@ resolve_measure_cmd() {
 }
 
 MEASURE_CMD="$(resolve_measure_cmd || true)"
-if [ -z "$MEASURE_CMD" ]; then
-  verdict_bypass "$HOOK_ID" "agentbrew CLI not available"
-fi
 
 # Background capture — session start must not wait for lint/static inventory.
-nohup bash -c "$MEASURE_CMD" >/dev/null 2>&1 &
-disown >/dev/null 2>&1 || true
+if [ -n "$MEASURE_CMD" ]; then
+  nohup bash -c "$MEASURE_CMD" >/dev/null 2>&1 &
+  disown >/dev/null 2>&1 || true
+fi
 
-# Non-blocking headroom alert from latest.json (even when measure is skipped as fresh).
+# Non-blocking headroom alert from latest.json (even when measure is skipped as
+# fresh, or when the CLI is missing).
 HEADROOM_LIB="$__HOOK_LIB_DIR/context-budget-headroom.sh"
 if [ -x "$HEADROOM_LIB" ] || [ -f "$HEADROOM_LIB" ]; then
   HEADROOM_MSG="$(bash "$HEADROOM_LIB" 2>/dev/null || true)"
   if [ -n "$HEADROOM_MSG" ]; then
     verdict_warn "$HOOK_ID" "$HEADROOM_MSG"
   fi
+fi
+
+if [ -z "$MEASURE_CMD" ]; then
+  verdict_bypass "$HOOK_ID" "agentbrew CLI not available"
 fi
 
 verdict_allow "$HOOK_ID" "scheduled background measure (if stale > ${STALE_DURATION})"

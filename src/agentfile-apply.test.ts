@@ -301,6 +301,24 @@ describe("applyAgentfile", () => {
       expect(state.mcpServers?.map((s) => s.name)).toEqual(["context7", "my-own-server"]);
     });
 
+    it("lets the Agentfile adopt a discovered server it lists, so dropping it later prunes it", () => {
+      const discovered = { ...makeServer("playwright"), source: "discovered" };
+      const state = makeState({ mcpServers: [discovered] });
+      mockLoadState.mockReturnValue(state);
+
+      mockLoadAgentfile.mockReturnValue({ mcp: ["playwright"] });
+      mockResolveAgentfileMcp.mockReturnValue([{ ...makeServer("playwright"), source: "agentfile" }]);
+      applyAgentfile("/project", { authoritative: true, quiet: true });
+      expect(mockSaveState).toHaveBeenCalled();
+
+      mockLoadAgentfile.mockReturnValue({ mcp: [] });
+      mockResolveAgentfileMcp.mockReturnValue([]);
+      const result = applyAgentfile("/project", { authoritative: true, quiet: true });
+
+      expect(result?.serversRemoved).toContain("playwright");
+      expect(state.mcpServers).toEqual([]);
+    });
+
     it("preserves enabled managed memory during authoritative apply", () => {
       const memoryServer = {
         name: MEMORY_MANAGED_SERVER_NAME,

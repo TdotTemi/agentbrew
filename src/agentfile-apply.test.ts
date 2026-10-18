@@ -287,6 +287,20 @@ describe("applyAgentfile", () => {
       expect(result?.serversRemoved).toContain("removed");
     });
 
+    it("keeps servers init discovered in agent configs during authoritative apply", () => {
+      const catalog = makeServer("context7");
+      const own = { ...makeServer("my-own-server"), source: "discovered" };
+      const state = makeState({ mcpServers: [catalog, own] });
+      mockLoadAgentfile.mockReturnValue({ mcp: ["context7"] });
+      mockLoadState.mockReturnValue(state);
+      mockResolveAgentfileMcp.mockReturnValue([catalog]);
+
+      const result = applyAgentfile("/project", { authoritative: true, quiet: true });
+
+      expect(result?.serversRemoved ?? []).not.toContain("my-own-server");
+      expect(state.mcpServers?.map((s) => s.name)).toEqual(["context7", "my-own-server"]);
+    });
+
     it("preserves enabled managed memory during authoritative apply", () => {
       const memoryServer = {
         name: MEMORY_MANAGED_SERVER_NAME,

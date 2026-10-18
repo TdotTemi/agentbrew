@@ -159,6 +159,11 @@ continue?". The user set a goal so that they can be away.
   risk: unknowns first.
 - Work in small verified steps. Run the guard after each change that matters.
 - Log each non-obvious decision in one line: what you chose, and why.
+- Parallel workers (subagents): give them one shared brief file with the
+  delivery rules and unique log names (`$TMPDIR` is shared), and keep within
+  the user's parallel cap. When a worker reports, check its claims yourself
+  (re-run its metric, look at side effects such as LaunchAgents it touched),
+  and stop any background job it left running in a removed worktree.
 - Never write a result before it exists. A reviewer verdict, a check
   status, or a CI result is `pending` until the reviewer or check has run and
   you have read its output. Filling it in early is a false claim, even if you
@@ -229,7 +234,9 @@ Do this every time, also after a BLOCKED stop. Details:
 4. **Update every one of those skills**: each skill used gets an update, not
    a "no change". If the skill caused or missed a problem, make the edit that
    would have prevented it. If it worked as written, add an eval case built
-   from this run's scenario, so the behavior that worked stays tested. Route
+   from this run's scenario, so the behavior that worked stays tested. First
+   list the existing eval prompts. If one already covers the scenario, add a
+   case for a new angle instead of a copy. Route
    the update by owner (see the retro reference). For skills the user owns,
    edit the source and ship the change through that repo's normal delivery
    flow. Never edit an installed mirror. A third-party skill gets a task with

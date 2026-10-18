@@ -16,6 +16,17 @@ surface.
 The parser rejects malformed manifests during sync so a broken guardrail fails
 before it can silently disappear from an agent.
 
+Sync finds `hooks/` in this order: `AGENTBREW_REPO_ROOT`, then the nearest
+ancestor of the running CLI that has an `agentbrew` `package.json` and
+`hooks/manifest.yaml`, then the current directory. A clone matches at the repo
+root. An `npm i -g agentbrew` install matches at the package root, because the
+package ships `hooks/` (without the `.test.sh` fixtures) and `templates/rules/`
+through the `files` list in `package.json`. The real-e2e scenario
+`real-e2e/scenarios/us01-us21-npm-package-hooks.test.ts` packs the repo, installs the
+tarball globally into a scratch prefix, and checks that the hook entries and
+catalog `.mdc` rules match a clone. `scripts/install-e2e-if-needed.sh` runs it
+when `package.json`, the manifest, or the template rules change.
+
 ## Manifest schema
 
 ```yaml
@@ -139,7 +150,12 @@ both return the whole command.
 The manifest `verdict` names what the script itself emits. A hook that only
 detects text that another tool rewrites later declares `warn`, not `mutate`.
 The attribution hooks work this way: the dotfiles `gh` wrapper and
-`commit-msg` hook do the strip. `src/hooks/manifest.test.ts` checks that each
+`commit-msg` hook do the strip. The shared helper
+`hooks/lib/strip-agent-attribution.sh` puts the agent footer before a
+trailing git trailer block (`Task:`, `Signed-off-by:`), because git reads
+trailers only from the last paragraph. To check trailers like `git log` does,
+run `git interpret-trailers --parse --no-divider`: without the flag, git
+stops at the footer's `---` line and misses them. `src/hooks/manifest.test.ts` checks that each
 script can emit its declared verdict: `block` needs `verdict_block` or a
 `"decision":"block"` line, `warn` needs `verdict_warn` or added context,
 `mutate` needs `verdict_mutate`, and an `allow` script calls none of them.
@@ -150,6 +166,24 @@ print secrets, full environment dumps, or unrelated transcript contents.
 A `warn` hook on `UserPromptSubmit` can add context instead of a stderr line.
 It prints `{"hookSpecificOutput":{"hookEventName":"UserPromptSubmit","additionalContext":"…"}}`
 on stdout and exits `0`. Claude Code ignores a top-level `additionalContext`.
+A `PreToolUse` hint works the same way with `"hookEventName":"PreToolUse"`
+and no `permissionDecision`, so the call still runs; `poll-loop-hint` does
+this. Claude Code does not show the agent stderr from a hook that exits `0`.
+
+## Decision log
+
+Each verdict helper calls `log_decision` in `hooks/lib/log-decision.sh`. It
+appends one JSON line to `~/.cache/agentbrew/hook-decisions.jsonl`.
+
+- `HOOK_DECISIONS_LOG` overrides the log path.
+  `scripts/run-hook-fixtures.sh` and `scripts/verify-changed.sh` point it
+  at a temp file, so fixture runs never touch the real log.
+- A row gets `sessionId` from `HOOK_SESSION_ID`, or from `.session_id` in
+  the hook's `INPUT` variable. Name the stdin variable `INPUT` in new hooks.
+- `agentbrew metrics` counts only rows with a `sessionId`. Rows from older
+  hooks or fixture runs without one are skipped.
+- A hook test that runs a check script directly should export
+  `HOOK_DECISIONS_LOG` to a temp file too.
 
 ## Goal setting
 

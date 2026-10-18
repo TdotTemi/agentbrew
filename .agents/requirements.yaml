@@ -1,0 +1,68 @@
+# Where agentbrew meets each new-project required area. check-setup.sh reads
+# it: map.<area> lists the files that meet the area, waive.<area> gives the
+# reason an area does not fit. The monthly audit re-reads every line.
+# Rules: skill-plugins/workflow/new-project/references/requirements-map.md
+# Each map line lands in the PR that makes it true, with a comment saying why.
+
+# Docs: docs/README.md maps every doc to the question it answers;
+# src/docs/agent-guide-contract.test.ts fails on an unmapped doc, a broken map
+# link, an AGENTS.md over 10000 bytes or out of section order, or a README
+# that does not open with a quickstart and the map link.
+map.docs: docs/README.md src/docs/agent-guide-contract.test.ts
+
+# VISION.md (root, by accepted push back; docs/VISION.md is a symlink) has
+# Problem, Non-goals, Success metrics (pointing at docs/metrics.md), and dated
+# Kill criteria with the keep-or-kill decision on the fired 30K-line trigger.
+map.vision: VISION.md
+
+# docs/metrics.md: every metric is an outcome with a goal, a pivot, and its
+# exact command; missing data prints (stub), never 0. scripts/metrics.sh prints
+# the table, gate speed included. src/docs/metrics-doc.test.ts fails on a row
+# without a goal, pivot, or command, or a metric the script does not print.
+map.metrics: docs/metrics.md scripts/metrics.sh src/docs/metrics-doc.test.ts
+
+# docs/observability.md has Logs (content-free JSONL events from
+# src/core/events.ts: allow-listed fields only, off in tests through
+# vitest.config.ts), Errors (local only, no external reporter by accepted push
+# back; each error event names its story), and Health check: agentbrew status
+# --ci (src/health.ts) instead of scripts/doctor.sh, by accepted push back.
+# Every drift item prints its fix from src/drift-fixes.ts, a record over every
+# DriftItem type, so a type without a fix fails tsc.
+map.observability: docs/observability.md src/core/events.ts src/core/events.test.ts src/health.ts src/drift-fixes.ts
+
+# Each story in docs/user-stories/NN-*.md has a Metric line naming an outcome
+# row in docs/metrics.md (failed events for its story, never a test count) and
+# an E2E line naming its real-e2e scenarios. real-e2e/SCENARIO_MAP.md maps each
+# scenario to the stories its file name lists; src/docs/scenario-map.test.ts
+# fails on any drift.
+map.user-stories: docs/user-stories/README.md real-e2e/SCENARIO_MAP.md src/docs/scenario-map.test.ts
+
+# E2E: real-e2e/ instead of tests/e2e/ and npm run test:real-e2e instead of
+# scripts/e2e.sh (accepted push back). Each scenario runs the real CLI from
+# source in a scratch HOME with a happy and an error case; the one-step install
+# runs the real scripts/install.sh under sandbox-exec. No loading case: a CLI
+# has no loading state (accepted push back).
+map.e2e: real-e2e/scenarios real-e2e/SCENARIO_MAP.md vitest.real-e2e.config.ts src/real-e2e/scenario-fixture.ts
+
+# Setup: the README's first code block is one line that clones and runs
+# scripts/install.sh run (back up, build, link, init, heal, lint), which ends
+# with the doctor, agentbrew status --ci (accepted push back: install.sh run is
+# the setup, no scripts/setup.sh alias). src/install-script.test.ts proves the
+# doctor is the last call; src/docs/agent-guide-contract.test.ts pins the
+# README line. INSTALL.md is the agent-driven version of the same run.
+map.setup: README.md scripts/install.sh INSTALL.md src/install-script.test.ts src/docs/agent-guide-contract.test.ts
+
+# Caching: npm run verify is scripts/verify.sh. It skips a step that passed on
+# the same inputs: a hash of every tracked and untracked (not ignored) file's
+# path and content, the node version, the step command, and origin/main.
+# NO_CACHE=1 runs every step. src/scripts/verify-cache.test.ts proves that an
+# edit to one tracked file, or a new untracked file, re-runs the step.
+# npm test already selects affected tests (src/affected-tests.ts).
+map.caching: scripts/verify.sh src/scripts/verify-cache.test.ts src/affected-tests.ts
+
+# Self-improving: scripts/verify.sh times every step into
+# .metrics/gate-timings.jsonl (ignored); scripts/checkup.sh (npm run checkup)
+# runs the speed review over the uncached steps of the last 30 days; RECURRING.md
+# schedules it monthly (monthly-checkup); docs/learnings.md logs predicted vs
+# observed for each change.
+map.self-improving: scripts/verify.sh scripts/checkup.sh RECURRING.md docs/learnings.md

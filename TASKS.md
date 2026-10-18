@@ -145,30 +145,6 @@
      RECURRING.md watch-lists (re-research-stale-competitors, quarterly-
      dissolution-reeval) instead of a duplicate task. -->
 
-- [ ] agentbrew meets every new-project requirement, or waives it with a reason
-  - **ID**: meet-new-project-requirements
-  - **Tags**: requirements, agents, observability, docs
-  - **Details**: The 2026-10-16 audit scored agentbrew 9/22 by path (11/24 with `.agents/requirements.yaml`). By intent: e2e and tasks are met; vision, metrics, observability, user stories, setup, and self-improving are partial; checkup and caching are missing. Fix in this order:
-    1. `VISION.md`: a `## Problem` section and dated `## Kill criteria` (move the dissolution triggers in; record the keep-or-kill decision on the fired >30K-LOC trigger).
-    2. New `docs/metrics.md` (docs map row): metric | goal | pivot | command (no-op sync time, sync output lines, LOC trend, zero-to-configured time), `(stub)` when data is missing; `agentbrew metrics --goals` prints it.
-    3. Auto-sync events as content-free JSONL with an event list and an error-to-story map in new `docs/observability.md`; every `DriftItem` prints its fix in `status`.
-    4. Fix `real-e2e/SCENARIO_MAP.md` (us09-us10 rename, unmapped drift scenarios, US24 mismatch) and add `src/docs/scenario-map.test.ts` that fails on drift; add `Metric:` and `E2E:` lines to each story; add scenarios for US25 to US29.
-    5. `scripts/install.sh run` ends with `agentbrew status --ci`, and the README quick start opens with that one command.
-    6. A repo-wide checkup command (`npm run checkup`: status, cached gate, metrics, open P0s, monthly `audit-due.sh`).
-    7. Caching: `npm test` already selects affected tests; add a result cache keyed by input hash for the verify steps (re-run on any change, `NO_CACHE=1` forces a full run).
-    8. Time each gate step into `.metrics/gate-timings.jsonl` (ignored); the speed review runs inside `/tooling-checkup`; new `docs/learnings.md` (predicted vs observed).
-    9. Drain `.prereg-allowlist` and run `@tasks-md/lint` in `verify`; add `*.pem`, `*.key`, `.envrc`, `.metrics/` to `.gitignore`; trim `AGENTS.md` below about 9 KB for headroom.
-    Requirement updates from the tasks.md 100% run (2026-10-16, new-project skill): each story's metric is an outcome rate (for example failed sync events per story), not a passing-test count; each e2e scenario names its story ID; the event writer allow-lists string fields and tests turn the log off; a metric whose source answers 0 for a missing thing shows `(stub)`; every `DriftItem` fix is required by its type; the cache key lists every file a step reads (prove it by editing one file); the README setup block ends with the doctor; `CHANGELOG.md` is generated at release. Worked example: tasks.md PRs #26-#34.
-    Accepted push back (map, do not rename): root `VISION.md`, `scripts/install.sh run` as setup, `agentbrew status --ci` as the doctor, `real-e2e/` as e2e. No external error reporter (VISION excludes telemetry). No loading e2e case for a CLI.
-  - **Files**: `VISION.md`, `docs/`, `src/sync/auto-sync.ts`, `src/drift-checks/`, `real-e2e/`, `scripts/install.sh`, `package.json`, `.gitignore`, `.agents/requirements.yaml`
-  - **Output**: code
-  - **Acceptance**: `check-setup.sh . --profile tool` reaches 100% with every gap met, mapped, or waived with a reason, and `npm run verify` passes.
-  - **Hypothesis**: the setup score rises from 45% to 100%, honestly mapped or waived, and the monthly audit finds no new gap.
-  - **Measurement**: `bash ~/.claude/skills/new-project/scripts/check-setup.sh . --profile tool`
-  - **Success**: 100%, every waiver reasoned, `npm run verify` green.
-  - **Pivot**: a gap that costs more than it returns here becomes a waiver, or a requirement-change PR on `new-project`.
-  - **Anchor**: `skill-plugins/workflow/new-project/references/requirements-map.md`; audit 2026-10-16.
-
 <!-- Phase 1 (hooks-phase-1-cat-a-deterministic) COMPLETE 2026-06 — all 26 Cat A
      hooks shipped with scripts + manifest entries + per-hook fixture tests, and
      the production decision log (scripts/hook-observation.sh) confirms every one
@@ -179,111 +155,21 @@
 
 ## P1
 
-- [ ] The attribution-strip hook keeps git trailers last when it adds the agent footer
-  - **ID**: strip-attribution-footer-keeps-git-trailers-last
-  - **Tags**: hooks, attribution, bug
-  - **Details**: `hooks/lib/strip-agent-attribution.sh` (used by `hooks/checks/git-strip-agent-attribution.sh` and `scripts/sanitize-history.sh`). When the hook strips a vendor attribution line, it appends `---` and the agent footer at the very end of the message. If the message ends with git trailers (`Task:`, `Task-Claim:`, `Signed-off-by:`), the footer becomes the last paragraph, so git no longer parses them (`git log --format='%(trailers:key=Task)'` is empty). On 2026-10-16 this failed the tasks.md required `claim-check` on PR #26 ("resolved task='' claim=''"). Fix: insert the footer before the trailing trailer block (use `git interpret-trailers --parse` to find it), and add a fixture test with a message ending in `Task:`/`Task-Claim:` trailers. dotfiles has a twin copy in `lib/` (task `commit-msg-footer-keeps-git-trailers-last`).
-  - **Files**: `hooks/lib/strip-agent-attribution.sh`, `hooks/checks/git-strip-agent-attribution.test.sh`
-  - **Output**: code
-  - **Acceptance**: `bash hooks/checks/git-strip-agent-attribution.test.sh` includes a trailer case and passes.
-  - **Measurement**: `bash hooks/checks/git-strip-agent-attribution.test.sh` with a new case: a message ending in `Task:`/`Task-Claim:` trailers plus a stripped `Co-Authored-By:` line, checked with `git interpret-trailers --parse`.
-  - **Hypothesis**: placing the footer before the trailer block keeps trailers parseable; commits whose trailers the hook breaks drop from every agent commit with trailers to 0.
-  - **Success**: the new fixture passes, `git log -1 --format='%(trailers:key=Task-Claim,valueonly)'` prints the claim after the hook runs, and existing hook fixtures stay green.
-  - **Pivot**: if trailer detection misfires on plain prose endings, require a `Key: value` block that git itself parses (`git interpret-trailers --parse` non-empty) before moving anything.
-  - **Anchor**: git-interpret-trailers(1) (trailers must be the last paragraph); tasks.md docs/learnings.md row 2026-10-16.
-
 - [ ] Agents wait on events, not polling loops
   - **ID**: nudge-polling-loops-to-blocking-waits
   - **Tags**: hooks, perf, agents
-  - **Details**: The 2026-10-18 `/tooling-checkup` time review found `until <arg>` polling loops as the top recurring step across all projects: 5.8 h in 7 days, 52 calls, p95 10m00s, 49m41s/day (mostly comic-studio sessions; also tooling `until tail -3`, `until grep -E`). Add an opt-in PreToolUse Bash hook that matches `until`/`while` loops that contain `sleep` and answers with a hint, not a block: run the command in the background and wait for its completion notice, use a blocking wait (`gh pr checks --watch`, `wait <pid>`), or raise the poll interval. Ship it with fixture tests (loop with sleep: hint; plain `until` without sleep: silent; quoted text: silent) and a catalog entry.
-  - **Files**: `hooks/checks/`, `hooks/manifest.yaml`, `src/catalog.yaml`, `docs/`
+  - **Details**: The 2026-10-18 `/tooling-checkup` time review found `until <arg>` polling loops as the top recurring step across all projects: 5.8 h in 7 days, 52 calls, p95 10m00s, 49m41s/day. The opt-in hook `poll-loop-hint` now ships (see `docs/agent-perf.md` "Poll-loop hint"). What is left: turn it on for the owner's Mac in the dotfiles hooks overlay, then measure after 7 days.
+  - **Files**: `docs/agent-perf.md`, `hooks/checks/poll-loop-hint.sh`
   - **Output**: code
-  - **Acceptance**: the hook's fixture tests pass, `npm run verify` passes, and the hook is on for this Mac through the dotfiles hooks overlay.
+  - **Acceptance**: the hook is on for this Mac through the dotfiles hooks overlay, and the 7-day time review is recorded here.
   - **Hypothesis**: a hint at call time moves agents to event waits; `until <arg>` cost drops from 49m41s/day to under 10 min/day.
   - **Measurement**: `python3 ~/.claude/skills/tooling-checkup/scripts/agent_time_review.py --days 7` (the `until <arg>` overall line), 7 days after the hook is on.
   - **Success**: under 10 min/day, with no rise in `until` calls that time out.
   - **Pivot**: still over 30 min/day after 7 days -> make the hook block loops with `sleep` under 30 s, or drop the hint and file a skill change instead.
   - **Anchor**: tooling-checkup agent time review 2026-10-18; Forsgren, Humble, Kim 2018 (lead time); perf-review skill known fixes.
+  - **Blocked**: needs-time — 2026-10-18: the hook is on for the owner's Mac (dotfiles #160 owner overlay, `agentbrew sync` done; it fired live on a test loop). Measure on or after 2026-10-25 with `python3 ~/.claude/skills/tooling-checkup/scripts/agent_time_review.py --days 7` (the `until <arg>` overall line), then close or pivot.
 
 ## P2
-
-- [ ] Agent `git fetch` calls finish in seconds
-  - **ID**: speed-up-git-fetch
-  - **Tags**: perf, git, agents
-  - **Details**: The 2026-10-18 time review: `git fetch` in agentbrew sessions cost 1m18s/day (14 calls in 2 sessions, p95 4m31s). A 4-minute fetch of one GitHub repo points at a stall (sandbox proxy, `--all` over many remotes, or a fetch per worktree), not at data size. First find the slow calls with `agent-perf.mjs report --session <id>`, then fix the cause: fetch once per session, fetch only `origin`, or set `fetch.parallel`/`--filter=blob:none` where it helps.
-  - **Files**: `AGENTS.md`, `skill-plugins/`, `docs/`
-  - **Output**: code
-  - **Acceptance**: the cause is named in the PR with the session evidence, and a repeat time review shows the step under its target.
-  - **Hypothesis**: removing the stall drops `git fetch` p95 from 4m31s to under 30 s.
-  - **Measurement**: `python3 ~/.claude/skills/tooling-checkup/scripts/agent_time_review.py --days 7` (the agentbrew `git fetch` line).
-  - **Success**: p95 under 30 s over 7 days.
-  - **Pivot**: if the slow calls are all sandbox proxy stalls, move the fix to the sandbox network config and close this task.
-  - **Anchor**: tooling-checkup agent time review 2026-10-18.
-
-- [ ] "No recommended set" during install means no source downloads and no extra skills
-  - **ID**: init-skip-install-skips-source-fetch
-  - **Tags**: init, install, new-users, perf
-  - **Details**: The one-step install e2e (2026-10-16) showed that `agentbrew init --skip-install` (the installer's `--no-recommended` answer) still fetches every catalog source (about 20 git repos, 20-25 s) and installs the skills listed in the generated global Agentfile. A user who answered "No" still gets downloads and skills. Skip the source fetch and the Agentfile skill installs when `--skip-install` is set, and say in the summary how to add them later.
-  - **Files**: `src/init.ts`, `src/fetch-sources.ts`, `real-e2e/scenarios/us24-one-step-install.test.ts`
-  - **Output**: code
-  - **Acceptance**: the us24 fast e2e with `--no-recommended` shows no "Fetching" lines and no "Installing skill" lines.
-  - **Hypothesis**: the fast install e2e drops from about 30 s to under 10 s per test, and a "No" answer installs zero skills.
-  - **Measurement**: `npm run test:install-e2e` timing plus a grep of the run output for "Fetching" and "Installing skill".
-  - **Success**: under 10 s per test and zero fetches with `--no-recommended`.
-  - **Pivot**: if a later sync needs the source cache, fetch lazily on first `agentbrew install` instead.
-  - **Anchor**: Basili et al. 1994 (GQM); install e2e timing 2026-10-16.
-
-- [ ] Skill, eval, and docs-only PRs merge on the fast gate alone
-  - **ID**: verify-changed-sufficient-for-skill-only-diffs
-  - **Tags**: perf, gates, agents
-  - **Details**: AGENTS.md Delivery says to run the full `npm run verify` once before merge even when `npm run verify:changed` already covers the diff. On 2026-10-16 an eval-only `evals.json` change passed `verify:changed` in seconds, then spent 3m26s in the full gate with no new signal. Every goal retro ships such a PR. Let `verify:changed` print "merge-ready" when the diff touches only skill, eval, docs, rules, or task-queue paths, and update AGENTS.md Delivery to accept it.
-  - **Files**: `scripts/verify-changed.*`, `AGENTS.md` (Delivery)
-  - **Output**: code
-  - **Acceptance**: a skill-only branch gets "merge-ready" from `verify:changed`; any `src/` or `hooks/` path still requires the full gate.
-  - **Hypothesis**: gate time for skill/eval-only PRs drops from about 210 s to under 30 s with no rise in post-merge failures on `main`.
-  - **Measurement**: `node ~/.config/agentbrew/scripts/agent-perf.mjs report --all --days 30` (`npm run verify` count and sum on skill-only branches) plus full-gate results on `main` after such merges.
-  - **Success**: zero `main` breaks traced to fast-gate-only merges over 30 days, and those gates finish under 30 s.
-  - **Pivot**: any `main` break caused by a skill-only merge -> restore the full gate for that path class.
-  - **Anchor**: Forsgren, Humble, Kim 2018 (lead time); agent-perf report 2026-10-16 (npm run verify 3m26s on an eval-only PR).
-
-- [ ] Hook decision counts show real blocks, not test-fixture noise
-  - **ID**: hook-decision-log-excludes-fixtures
-  - **Tags**: hooks, metrics, telemetry
-  - **Details**: `agentbrew metrics` on the owner's Mac (2026-10-16) showed about 10,700 blocks in 24 hours, led by `selectors-pure` (866), `code-no-timestamps` (732), and `tests-adapt-to-production` (722). Those hooks fire only on Write/Edit, so the volume most likely comes from `scripts/run-hook-fixtures.sh` and hook tests writing to the real `~/.cache/agentbrew/hook-decisions.jsonl`. Find the writers, point fixtures at a temp log (`HOOK_DECISIONS_LOG` or a temp `HOME`), and tag real decisions with the session id so the metrics count only real ones.
-  - **Files**: `hooks/lib/log-decision.sh`, `scripts/run-hook-fixtures.sh`, `src/metrics/usage.ts`
-  - **Output**: code
-  - **Acceptance**: running the hook fixtures adds zero lines to the real decision log; `agentbrew metrics` counts only rows with a session id.
-  - **Hypothesis**: most logged blocks are fixture noise; after the fix the daily block count drops by more than 80% with no change in real agent behaviour.
-  - **Measurement**: `agentbrew metrics --days 1 --json | jq .hooks.blocks` before and after one day of normal use, plus `wc -l` of the log around a fixture run.
-  - **Success**: fixture run adds 0 rows; daily blocks drop by 80% or more.
-  - **Pivot**: if fixture rows are under 20% of blocks, the hooks over-block real edits; narrow their matchers instead.
-  - **Anchor**: Basili, Caldiera, Rombach 1994 (GQM); agentbrew metrics snapshot 2026-10-16.
-
-- [ ] npm users get the same hooks and per-file rules as clone users
-  - **ID**: npm-package-ships-hooks-and-rules
-  - **Tags**: packaging, hooks, rules, new-users
-  - **Details**: `package.json` `files` ships only `dist`, README, and LICENSE, and the hook sync finds `hooks/` by walking up from the repo or cwd. So `npm i -g agentbrew` users get no canonical hooks (perf recording, verify-before-completion, /goal hooks), and the `.mdc` template rules may not deploy either. Ship `hooks/` and `templates/rules` in the package (or copy them into `dist/` at build) and resolve them from the package root.
-  - **Files**: `package.json`, `tsup.config.ts`, `src/sync/hooks-sync.ts`, `src/sync/catalog-template-rules.ts`
-  - **Output**: code
-  - **Acceptance**: `npm pack` then a global install in a temp prefix and temp HOME deploys the default-on hooks into `~/.claude/settings.json`.
-  - **Hypothesis**: default-on hooks deployed for an npm install go from 0 to the same set a clone gets.
-  - **Measurement**: `npm pack` + `npm i -g ./agentbrew-*.tgz --prefix $TMP` + `HOME=$TMP/home agentbrew sync`, then count hook entries in the temp `settings.json`.
-  - **Success**: hook ids match a clone install exactly.
-  - **Pivot**: if the package size grows past 2x, ship only the default-on hooks.
-  - **Anchor**: Basili et al. 1994 (GQM); finding from the 2026-10-16 portability audit.
-
-- [ ] New agentbrew worktrees get dependencies in seconds, not minutes
-  - **ID**: worktree-deps-apfs-clone
-  - **Tags**: perf, worktrees, agents
-  - **Details**: Every agent worktree runs `npm ci` (4-5 min each in the run-goal build, about ten times in one session). When the worktree's `package-lock.json` matches the main checkout's, an APFS clone (`cp -cR <main>/node_modules ./node_modules`) took 11 s on 2026-10-16, and the docs tests passed on it. Add a `scripts/worktree-deps.sh` that clones when the lockfiles match and falls back to `npm ci` otherwise, and point the AGENTS.md worktree gotcha at it. A symlinked `node_modules` stays banned (it breaks `src/cli.test.ts`); a clone is a real copy.
-  - **Files**: `scripts/worktree-deps.sh`, `AGENTS.md` (Gotchas, Delivery)
-  - **Output**: code
-  - **Acceptance**: on a fresh worktree with a matching lockfile, the script finishes in under 30 s and `npm run verify` passes; with a changed lockfile it runs `npm ci`.
-  - **Hypothesis**: worktree setup drops from about 270 s to under 30 s when lockfiles match, with no test that passes only on a clean install.
-  - **Measurement**: `time scripts/worktree-deps.sh` versus `time npm ci` on the same fresh worktree; `npm run verify` result on the cloned tree.
-  - **Success**: under 30 s and verify green on 5 consecutive worktrees.
-  - **Pivot**: any verify failure that a clean `npm ci` fixes -> keep `npm ci` and drop the clone path.
-  - **Anchor**: agent-perf report 2026-10-16 (npm ci 5m02s and 4m15s in one turn); Forsgren, Humble, Kim 2018 (lead time).
 
 - [ ] Make the official MCP Registry the default catalog lookup when it reaches 1.0
   - **ID**: flip-catalog-to-registry-first-at-ga
@@ -305,55 +191,24 @@
 - [ ] Restore agentbrew release automation and npm authentication
   - **ID**: restore-agentbrew-release-automation
   - **Tags**: release, github-actions, npm, human-blocked
+  - **Hypothesis**: one owner-run publish brings npm `latest`, the git tag, and `package.json` to the same version (version drift goes to 0).
+  - **Measurement**: `npm view agentbrew version`, `node -p "require('./package.json').version"`, and `git describe --tags --abbrev=0`.
+  - **Pivot**: if the publish fails on auth again, write a reviewed manual release path and close the automation part.
+  - **Anchor**: `docs/human-blocked-actions/agentbrew-release-auth-2026-07-20.md`.
   - **Details**: The Auto-release workflow did not run after the merged delivery. `github.com/fyodoriv/agentbrew` is now the only canonical home, and GitHub Actions is disabled there. The documented manual fallback was blocked by `npm whoami` returning `ENEEDAUTH`. The workflow already has a `workflow_dispatch` fallback. Release stays blocked until Actions is enabled on `fyodoriv/agentbrew` (or a reviewed manual release path exists) and npm credentials are available. See `docs/human-blocked-actions/agentbrew-release-auth-2026-07-20.md`.
   - **Files**: `.github/workflows/auto-publish.yml`, `scripts/publish-latest.sh`, `docs/human-blocked-actions/agentbrew-release-auth-2026-07-20.md`
   - **Acceptance**: The owner runs `npm run publish:latest` in a real terminal (browser 2FA needs a TTY); afterwards the git tag, npm `latest`, and `package.json` version match. GitHub Actions stays off, so no workflow step is required.
   - **Blocked**: needs-owner-tty — npm publish needs the owner's browser 2FA in a real terminal; agents cannot run it.
-
-- [ ] Workflow skills route only to skills that exist
-  - **ID**: skills-route-dangling-skill-names
-  - **Tags**: skills, routing, docs
-  - **Details**: `src/skills/skill-routing-refs.test.ts` checks every `(use <skill>)` routing hint under `skill-plugins/`. Some targets still resolve to no skill and sit in its `KNOWN_DANGLING` allowlist: `clarify`, `design-review`, `doc-check`, `pipeline-ops`, `readme-audit`, `refactor`, `rfc-iterate`, `rfc-review`, `taste`. They come from `analyze`, `companion-docs-sync`, `companion-researcher`, `git-diagnose-codebase`, `grind-report`, `markdown-for-gdoc`, and `rfc`. For each, point the hint at a real skill, add the skill to the catalog, or drop the hint.
-  - **Files**: `skill-plugins/workflow/*/SKILL.md`, `src/skills/skill-routing-refs.test.ts`
-  - **Output**: code
-  - **Acceptance**: `KNOWN_DANGLING` is empty and `npx vitest run src/skills/skill-routing-refs.test.ts` passes.
-  - **Hypothesis**: routing hints that name a missing skill drop to 0, so agents are never routed to nothing.
-  - **Measurement**: the size of `KNOWN_DANGLING` in `src/skills/skill-routing-refs.test.ts`.
-  - **Success**: 0.
-  - **Pivot**: if a name has no real home, delete the hint rather than invent a skill.
-  - **Anchor**: Agent Skills routing guidance ("Don't use for…" fields); Basili et al. 1994 (GQM).
-
-- [ ] A hand-installed catalog skill from a new source survives sync under a global Agentfile
-  - **ID**: hand-install-survives-agentfile-prune
-  - **Tags**: scout, agentfile, install, bug
-  - **Details**: Found while adding the `minsky` catalog entry. In a scratch `HOME` with the global Agentfile that `agentbrew init` writes (a `sources:` list, no `skills:`), `agentbrew install minsky` printed "installed" and copied the skill to `~/.config/agentbrew/installed-skills/minsky`, but the source `fyodoriv/minsky` was gone from `state.yaml` afterwards and `~/.claude/skills/minsky` was never linked. With the Agentfile moved away, the same install linked the skill. README says "Skills you installed by hand stay." Either keep the hand-installed source through the authoritative prune, or have `install` add the skill to the Agentfile and say so.
-  - **Files**: `src/agentfile.ts`, `src/catalog/install.ts`, `src/source-skill-prune.ts`
-  - **Output**: code
-  - **Acceptance**: in a scratch `HOME` after `agentbrew init --skip-install --skip-sync`, `agentbrew install <catalog skill from a new source>` leaves the source in state and links the skill into `~/.claude/skills/`; a test covers it.
-  - **Hypothesis**: hand installs under a global Agentfile stop vanishing, so "installed" output matches what agents see.
-  - **Measurement**: the scratch-HOME repro above: `ls ~/.claude/skills/<name>` after install (now missing).
-  - **Success**: the link exists and a second `agentbrew sync` keeps it.
-  - **Pivot**: if pruning is the intended Agentfile contract, make `install` print that the Agentfile will drop the skill and how to keep it.
-  - **Anchor**: README "Agentfile" (hand installs stay); Basili et al. 1994 (GQM).
-
-- [ ] Repos made with new-project can pull later template fixes
-  - **ID**: new-project-updatable-templates
-  - **Tags**: skills, new-project, templates
-  - **Details**: `new-project` copies its templates once (`scripts/scaffold.sh`). A fix to a template, such as a new `AGENTS.md` rule or a better `scripts/check.sh`, never reaches repos made earlier. [Copier](https://github.com/copier-org/copier) keeps a `.copier-answers.yml` and applies template changes with `copier update`. Turn `templates/` into a Copier template, keep `scaffold.sh` as a thin wrapper (with a no-Copier fallback), and document `copier update` in the skill.
-  - **Files**: `skill-plugins/workflow/new-project/`, `src/skills/new-project-contract.test.ts`
-  - **Output**: code
-  - **Acceptance**: a repo scaffolded from the old template gets a changed template line through `copier update`, keeps its own edits, and still scores 100% with `check-setup.sh`.
-  - **Hypothesis**: template fixes reach 100% of repos made with the skill, up from 0% today, with no lost local edits.
-  - **Measurement**: a contract test that scaffolds, edits, changes a template, runs `copier update`, and runs `check-setup.sh`.
-  - **Success**: the update applies, local edits survive, and the score stays 100%.
-  - **Pivot**: if Copier needs Python on machines without it, or conflicts on more than 1 file in the test, keep one-time copies and add a `check-setup.sh` hint for drift instead.
-  - **Anchor**: Copier docs "Updating a project"; new-project research brief (references/research.md, section 5).
 
 ## P3
 
 - [ ] Workspace-aware `agentbrew sync` — discover and process per-repo Agentfiles across **one or more workspaces** on one host
   - **ID**: workspace-aware-sync
   - **Tags**: architecture, agentfile, workspace, multi-repo, multi-workspace, curator-not-host
+  - **Hypothesis**: one `agentbrew sync` applies every per-repo Agentfile in the declared workspaces, so manual `sync --agentfile` runs drop from one per repo to zero.
+  - **Measurement**: `fd -g Agentfile.yaml ~/apps -d 3 | wc -l` (repos that need a manual run today) before and after.
+  - **Pivot**: if only one workspace still has per-repo Agentfiles at the next review, close this task as not needed.
+  - **Anchor**: tasks.md `workspace-mode-nested-repos`; the 2026-10-16 re-check note below.
   - **Details**: Companion to `tasksmd/tasks.md` task `workspace-mode-nested-repos` (filed 2026-05-12 PR upstream). Operators frequently have **multiple** workspace folders on the same host — the operator at 2026-05-12 has 5 workspaces under `~/apps/` (`tooling`, `acme`, `learning`, `_inventory`, `docs`), several containing their own per-repo `Agentfile.yaml`. Today `agentbrew sync` takes either no Agentfile (uses global `~/.config/agentbrew/Agentfile.yaml`) or an explicit `--agentfile <path>` flag — both single-Agentfile shapes. There's no first-class way to compose one global manifest + N workspaces × M per-repo manifests.
 
     The operator's mental model is "I have these workspaces; agentbrew should know what every repo in every workspace wants and reconcile that into the target agent configs." Today that requires running `agentbrew sync --agentfile <path>` once per repo across N workspaces — friction that scales with workspace count × repo count.
@@ -380,6 +235,10 @@
 - [ ] Drop the basic-ftp override once get-uri accepts a patched range
   - **ID**: scout-basic-ftp-override-removal
   - **Tags**: scout, dependencies, security
+  - **Hypothesis**: once `get-uri` accepts a patched `basic-ftp`, removing the override drops one pinned transitive dependency with no new audit finding.
+  - **Measurement**: `npm view get-uri dependencies.basic-ftp` and `npm audit --json | jq '.vulnerabilities["basic-ftp"]'`.
+  - **Pivot**: if `get-uri` has not widened its range by the next quarterly review, keep the pin and close this task with that reason.
+  - **Anchor**: the `basic-ftp` 5.x denial-of-service advisory; dependency audit 2026-10-16.
   - **Details**: `package.json` pins `basic-ftp` to 6.2.3 through `overrides` because `get-uri@8` asks for `^5.3.1`, and 5.x has an open denial-of-service advisory. Remove the override when `get-uri` (via `promptfoo` > `proxy-agent`) widens its range to a patched release, so the pin stops hiding upstream drift.
   - **Files**: package.json, package-lock.json
   - **Acceptance**: (1) the `basic-ftp` entry is gone from `overrides`; (2) `npm audit` stays free of high findings from `basic-ftp`.
@@ -388,6 +247,10 @@
 - [ ] (Publish-only step) File the staged upstream issue at `neiii/bridle` (upstream relocated 2026-05-02 from `superwall/bridle`) noting `harness-locate` uses singular `skill/` and `command/` for OpenCode but the official OpenCode docs use plural.
   - **ID**: bridle-opencode-path-issue
   - **Tags**: upstream-contribution, bridle, scout, blocked-explicit-permission, publish-only
+  - **Hypothesis**: filing the staged issue gets the OpenCode singular and plural path mismatch fixed or closed upstream, so the next path audit stops flagging it.
+  - **Measurement**: `gh issue list --repo neiii/bridle --state all --search opencode` (state of the filed issue).
+  - **Pivot**: no maintainer response within 90 days: drop the task (VISION 90-day rule).
+  - **Anchor**: `docs/audits/harness-locate-cross-check.md`; VISION "delegate, contribute, absorb".
   - **Details**: Surfaced from the 2026-04-26 `audit-harness-locate-paths` audit (see [`docs/audits/harness-locate-cross-check.md`](docs/audits/harness-locate-cross-check.md)). Bridle's `harness-locate::opencode` returns `~/.config/opencode/skill/` (singular) and `~/.config/opencode/command/` (singular). Per [OpenCode docs](https://opencode.ai/docs/skills) (2026-04-26), the actual paths are plural: `~/.config/opencode/skills/<name>/SKILL.md` and `~/.config/opencode/commands/<name>.md`.
 
     **Draft staged 2026-04-26 (PR #814)** in [`docs/audits/bridle-opencode-issue-draft.md`](docs/audits/bridle-opencode-issue-draft.md). The draft includes the title, body, source-code line references (`opencode.rs:41-46` for `commands_dir`, `opencode.rs:73-78` for `skills_dir`), suggested diff, and a filing checklist for the publish step.
@@ -418,6 +281,10 @@
 - [ ] Propose managed-section marker convention as an ecosystem-wide spec (upstream contribution).
   - **ID**: ecosystem-contrib-managed-section-convention
   - **Tags**: ecosystem, contribution, standards
+  - **Hypothesis**: one upstream PR that links the marker spec gets at least one more tool to use the shared format, so marker collisions between tools stay at zero.
+  - **Measurement**: the upstream PR state (`gh pr view <url> --json state`) and the tools listed as using the format in `docs/specs/managed-section-markers.md`.
+  - **Pivot**: no response within 90 days: keep the spec local and close the task.
+  - **Anchor**: `docs/specs/managed-section-markers.md`.
   - **Details**: **Publishing hold**: the final publish step (filing the PR, posting the comment, sending any external message) is a SEPARATE approval from approval to claim or research — it requires explicit per-action user approval in the session that performs it, per the file-level publishing policy. Drafting PR text and comment bodies locally is fine; the `gh pr create` / `gh issue comment` / `gh pr review` action itself is blocked until approved.
     Multiple tools now write to the same agent config files (CLAUDE.md, AGENTS.md, `.cursor/rules/`). Without a shared convention, they collide. agentbrew uses `<!-- agentbrew:start -->` / `<!-- agentbrew:end -->`. Caliber uses `<!-- caliber:managed:<name> -->` / `<!-- /caliber:managed:<name> -->`. React Doctor writes directly without markers. No standard exists.
     File a lightweight spec proposal — a gist or small repo — documenting: (a) marker format (`<!-- <tool-name>:managed:<section-name> -->`), (b) ownership semantics (only the owning tool may modify content inside its markers; other tools must preserve the block verbatim), (c) marker placement (top-level sections in markdown, can contain valid markdown), (d) nesting (disallowed — markers must be section-siblings, not nested), (e) test patterns (regex + examples). Link from agentbrew's VISION.md and file a drive-by PR on Caliber / Warden / React Doctor repos linking to the spec with a one-sentence "we'd like to align on this marker convention."
@@ -430,6 +297,10 @@
 - [ ] Trust-building PRs on vercel-labs/skills from the drafts staged in `fyodoriv/skills`
   - **ID**: contribute-trust-building-pr-skills-cli
   - **Tags**: upstream-contribution, skills-cli, blocked-explicit-permission, bug-fix
+  - **Hypothesis**: landing the staged fixes upstream builds maintainer trust, so larger delegation asks get reviewed; at least one PR merges.
+  - **Measurement**: `gh pr list --repo vercel-labs/skills --author fyodoriv --state merged --json number --jq length`.
+  - **Pivot**: no merge within 90 days of filing: stop filing and keep the fixes local where agentbrew needs them.
+  - **Anchor**: `docs/competition/vercel-skills-cli-vs-agentbrew.md` § Contribution roadmap.
   - **Details**: **Publishing hold**: the final publish step (filing the PR, posting the comment, sending any external message) is a SEPARATE approval from approval to claim or research — it requires explicit per-action user approval in the session that performs it, per the file-level publishing policy. Drafting PR text and comment bodies locally is fine; the `gh pr create` / `gh issue comment` / `gh pr review` action itself is blocked until approved.
     **DO NOT claim this task without explicit user approval** (P3 policy).
 
@@ -479,6 +350,10 @@
 - [ ] RFC comment on vercel-labs/skills [issue #268](https://github.com/vercel-labs/skills/issues/268) + [issue #455](https://github.com/vercel-labs/skills/issues/455) — user-created skill preservation classifier.
   - **ID**: contribute-rfc-comment-issues-268-455-user-safety-classifier
   - **Tags**: upstream-contribution, skills-cli, blocked-explicit-permission, data-safety
+  - **Hypothesis**: an RFC comment with agentbrew's classifier taxonomy shapes the upstream fix, so the merged fix preserves user-created skills.
+  - **Measurement**: `gh issue view 268 --repo vercel-labs/skills --json state,comments`.
+  - **Pivot**: if issue #268 closes without a preservation fix, keep agentbrew's own classifier and close this task.
+  - **Anchor**: `docs/competition/vercel-skills-cli-vs-agentbrew.md` § Feature 7.
   - **Details**: **Publishing hold**: the final publish step (filing the PR, posting the comment, sending any external message) is a SEPARATE approval from approval to claim or research — it requires explicit per-action user approval in the session that performs it, per the file-level publishing policy. Drafting PR text and comment bodies locally is fine; the `gh pr create` / `gh issue comment` / `gh pr review` action itself is blocked until approved.
     **DO NOT claim this task without explicit user approval** (P3 policy).
     Source: [docs/competition/vercel-skills-cli-vs-agentbrew.md § "Feature 7: User-created skill preservation"](../docs/competition/vercel-skills-cli-vs-agentbrew.md#7-user-created-skill-preservation--4-competing-bug-fix-prs-in-flight) and [Contribution roadmap row 3](../docs/competition/vercel-skills-cli-vs-agentbrew.md#contribution-roadmap--priority-ordered). Research (2026-04-19) found the user-safety direction has **4 competing bug-fix PRs already open** ([#609](https://github.com/vercel-labs/skills/pull/609), [#611](https://github.com/vercel-labs/skills/pull/611), [#869](https://github.com/vercel-labs/skills/pull/869), [#944](https://github.com/vercel-labs/skills/pull/944)) plus related bug reports ([#268](https://github.com/vercel-labs/skills/issues/268), [#455](https://github.com/vercel-labs/skills/issues/455), [#606](https://github.com/vercel-labs/skills/issues/606)). Filing a 5th implementation hurts: the queue is saturated and maintainers haven't merged any of them yet. The right move is RFC input on the design, not another competing PR.

@@ -93,11 +93,13 @@ agentbrew install composio                 # deploys Composio Connect MCP (1000+
 agentbrew setup composio                   # guided wizard → saves to ~/.zshenv.secrets
 ```
 
-**Claude Code permissions.** By default `sync` sets Claude Code's `permissions.defaultMode` to `bypassPermissions`, sets `skipAutoPermissionPrompt: true`, and adds an `mcp__<server>__*` allow rule for every configured MCP server, so Claude runs tools without asking. To keep your own permission settings and prompts, set the machine-local option in `~/.config/agentbrew/state.yaml`; `sync` and drift repair then leave them alone:
+**Claude Code permissions.** By default, `sync` turns Claude Code's permission prompts off. It sets `permissions.defaultMode` to `bypassPermissions`, sets `skipAutoPermissionPrompt: true`, and adds an `mcp__<server>__*` allow rule for every configured MCP server. Claude then runs tools without asking. To keep your own permission settings and prompts, add this line to `~/.config/agentbrew/state.yaml`. After that, `sync`, `init`, and drift repair do not change them:
 
 ```yaml
 claudePermissions: keep   # default: manage
 ```
+
+`keep` does not undo what an earlier `sync` wrote. If `sync` already ran, also remove `defaultMode`, `skipAutoPermissionPrompt`, and any `mcp__*` allow rules you do not want from `~/.claude/settings.json`.
 
 **Scopes.** `install` is global by default (applies to every agent). Use `--local` / `--project` to install into the current repo's `.agentbrew/skills/` — ideal for project-specific conventions or team-shared skills.
 

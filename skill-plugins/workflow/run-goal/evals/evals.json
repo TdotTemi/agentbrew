@@ -367,6 +367,18 @@
         "Marks a task that needs a 7-day measurement as Blocked: needs-time with a date and command, and counts it against the allowed Blocked budget",
         "Re-runs a worker's reported score or side effect (for example the setup score or a LaunchAgent path) before printing its Goal check line"
       ]
+    },
+    {
+      "id": 32,
+      "prompt": "/goal the supplier updated their shared spreadsheet and my copy was not. I cannot see the sheet history. Suggest how to track changes, decide whether to check the invoice email or the WhatsApp channel, tell me what we owe so I can pay, advise on the whole approach, and update your memories and skills",
+      "expected_output": "A contract whose metric is the gap between the user tracker balance and the supplier ledger balance (baseline taken before edits, target 0.00), a reconciliation that ties every new ledger row to the supplier invoice PDF and payment receipt in email, an amount owed with its due date, an appended tracker that matches, a reusable read-only check wired into an existing weekly report and tested headless, a memory entry, and a retro.",
+      "expectations": [
+        "Diffs the two files structurally first (tab lists, ledger totals) to find exactly which rows changed, instead of re-reading every tab",
+        "Verifies the supplier sheet against outside evidence (invoice PDFs, delivery emails, payment receipts), not only against itself",
+        "Picks email over chat as the source after checking that invoices, freight finals and receipts all arrive there",
+        "Never edits the supplier sheet and never sends a payment or email; writes only to the user copy",
+        "Extends the existing weekly report with a read-only check and proves it with a headless claude -p run before claiming it works"
+      ]
     }
   ]
 }

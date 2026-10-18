@@ -138,13 +138,46 @@ export function toCursorHooksConfig(config: ClaudeHooksConfig): ClaudeHooksConfi
 
 /** Merge managed hooks into existing hooks config, preserving user hooks.
  *  Returns the merged config and the set of managed keys. */
+/** Identity of one deployed hook item: "event:matcher command" (or prompt). */
+export function hookItemId(event: string, matcher: string | undefined, item: ClaudeHookItem): string {
+  return `${hookKey(event, matcher)} ${item.command ?? item.prompt ?? ""}`;
+}
+
+/** Hook ids in a config, for the manifest's per-agent ownership record. */
+export function managedHookIdsForConfig(config: ClaudeHooksConfig): string[] {
+  return Object.entries(config).flatMap(([event, groups]) =>
+    groups.flatMap((group) => group.hooks.map((item) => hookItemId(event, group.matcher, item))),
+  );
+}
+
+/**
+ * Merge desired (agentbrew-managed) hooks into the existing config.
+ *
+ * Ownership is per hook, not per group: a group whose event:matcher key
+ * agentbrew managed can also hold the person's own hooks (a group with no
+ * matcher shares the `*` key). Only hooks agentbrew deployed
+ * (`previousManagedIds`) or deploys now are replaced; the rest stay. Without
+ * a recorded id list (older manifests), agentbrew keeps its old rule for
+ * groups with an explicit matcher (it always writes one), and in a group with
+ * no matcher a hook counts as agentbrew's only if it is desired now or runs a
+ * script from `deployDir`.
+ */
 export function mergeHooksConfig(
   existing: ClaudeHooksConfig,
   desired: ClaudeHooksConfig,
   previousManagedKeys: Set<string>,
+  options: { previousManagedIds?: Set<string>; deployDir?: string } = {},
 ): { merged: ClaudeHooksConfig; managedKeys: string[] } {
   const merged: ClaudeHooksConfig = {};
   const managedKeys: string[] = [];
+  const desiredIds = new Set(managedHookIdsForConfig(desired));
+  const deployDir = options.deployDir ?? defaultDeployDir();
+  const isAgentbrewHook = (event: string, matcher: string | undefined, item: ClaudeHookItem): boolean => {
+    const id = hookItemId(event, matcher, item);
+    if (desiredIds.has(id)) return true;
+    if (options.previousManagedIds) return options.previousManagedIds.has(id);
+    return matcher !== undefined || (item.command ?? "").includes(deployDir);
+  };
 
   // Collect all event names from both sides
   const allEvents = new Set([...Object.keys(existing), ...Object.keys(desired)]);
@@ -153,10 +186,11 @@ export function mergeHooksConfig(
     const existingGroups = existing[event] ?? [];
     const desiredGroups = desired[event] ?? [];
 
-    // Keep user groups (those not previously managed by agentbrew)
-    const userGroups = existingGroups.filter((g) => {
-      const key = hookKey(event, g.matcher);
-      return !previousManagedKeys.has(key);
+    // Keep user groups whole; from previously managed groups keep the user's own hooks.
+    const userGroups = existingGroups.flatMap((g) => {
+      if (!previousManagedKeys.has(hookKey(event, g.matcher))) return [g];
+      const own = g.hooks.filter((item) => !isAgentbrewHook(event, g.matcher, item));
+      return own.length > 0 ? [{ ...g, hooks: own }] : [];
     });
 
     // Add desired (managed) groups
@@ -395,6 +429,25 @@ function previousManagedKeysForTarget(manifest: Manifest, target: HooksTarget): 
   return new Set();
 }
 
+function previousManagedIdsForTarget(manifest: Manifest, target: HooksTarget): Set<string> | undefined {
+  const ids = manifest.managedHookIdsByAgent?.[target.agentName];
+  return ids === undefined ? undefined : new Set(ids);
+}
+
+function setManagedIdsForTarget(manifest: Manifest, target: HooksTarget, managedIds: string[]): void {
+  const next = { ...(manifest.managedHookIdsByAgent ?? {}) };
+  if (managedIds.length > 0) {
+    next[target.agentName] = managedIds;
+  } else {
+    delete next[target.agentName];
+  }
+  if (Object.keys(next).length > 0) {
+    manifest.managedHookIdsByAgent = next;
+  } else {
+    delete manifest.managedHookIdsByAgent;
+  }
+}
+
 function setManagedKeysForTarget(manifest: Manifest, target: HooksTarget, managedKeys: string[]): void {
   const next = { ...(manifest.managedHookKeysByAgent ?? {}) };
   if (managedKeys.length > 0) {
@@ -452,24 +505,27 @@ function syncSingleTarget(
   hooks: ManagedHook[],
   manifest: Manifest,
   dryRun: boolean,
-): { actions: HooksDiffAction[]; managedKeys: string[] } {
+): { actions: HooksDiffAction[]; managedKeys: string[]; managedIds: string[] } {
   const desiredConfig = formatHooksConfig(
     toClaudeHooksConfig(filterHooksForTarget(hooks, target.agentName)),
     target.format,
   );
   const previousManagedKeys = previousManagedKeysForTarget(manifest, target);
   const managedKeys = managedKeysForConfig(desiredConfig);
+  const managedIds = managedHookIdsForConfig(desiredConfig);
   const filePath = resolveHooksFilePath(target);
   const { raw: settings, hooks: currentConfig } = readHooksFile(filePath, target);
   const diff = computeHooksDiff(currentConfig, desiredConfig, previousManagedKeys);
   const settingsChanged = target.agentName === "claude-code" ? applyClaudeCodePermissionDefaults(settings) : false;
   const permissionAction: HooksDiffAction = { key: CLAUDE_CODE_PERMISSION_SETTINGS_KEY, type: "update" };
   const actions = settingsChanged ? [...diff, permissionAction] : diff;
-  if (actions.length === 0 || dryRun) return { actions, managedKeys };
+  if (actions.length === 0 || dryRun) return { actions, managedKeys, managedIds };
 
-  const { merged } = mergeHooksConfig(currentConfig, desiredConfig, previousManagedKeys);
+  const { merged } = mergeHooksConfig(currentConfig, desiredConfig, previousManagedKeys, {
+    previousManagedIds: previousManagedIdsForTarget(manifest, target),
+  });
   writeSettingsFile(filePath, hooksFileContent(settings, merged, target));
-  return { actions, managedKeys };
+  return { actions, managedKeys, managedIds };
 }
 
 /** Update managed keys in the manifest based on current hooks state. */
@@ -506,7 +562,10 @@ function processHooksTargets(targets: HooksTarget[], hooks: ManagedHook[], sctx:
   let total = 0;
   for (const target of targets) {
     const result = syncSingleTarget(target, hooks, sctx.manifest, sctx.dryRun);
-    if (!sctx.dryRun) setManagedKeysForTarget(sctx.manifest, target, result.managedKeys);
+    if (!sctx.dryRun) {
+      setManagedKeysForTarget(sctx.manifest, target, result.managedKeys);
+      setManagedIdsForTarget(sctx.manifest, target, result.managedIds);
+    }
     logTargetResult(result.actions, target.agentName, sctx);
     total += result.actions.length;
   }

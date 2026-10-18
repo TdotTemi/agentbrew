@@ -17,6 +17,10 @@ export interface Manifest {
    *  Used to distinguish managed hooks from user-created ones. */
   managedHookKeys?: string[];
   managedHookKeysByAgent?: Record<string, string[]>;
+  /** Per agent, the exact hooks agentbrew deployed ("event:matcher command").
+   *  A group under a managed key can also hold the person's own hooks; only
+   *  these entries are agentbrew's to replace or prune. */
+  managedHookIdsByAgent?: Record<string, string[]>;
   /** The Claude Code `statusLine` value agentbrew wrote last (src/sync/statusline-sync.ts).
    *  A different value in settings.json is the user's own and is kept. */
   managedStatusLine?: unknown;

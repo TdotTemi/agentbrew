@@ -11,7 +11,13 @@
 
 The agent explains what will change, asks your preferences, backs up your current agent settings, installs, heals drift, and restores the backup by itself if anything critical fails. Undo later with `bash scripts/install.sh restore`. Details: [`INSTALL.md`](INSTALL.md).
 
-Or install by hand:
+Or set it up in one line (clone, back up, install, heal, verify; it ends with the doctor, `agentbrew status --ci`):
+
+```bash
+git clone https://github.com/fyodoriv/agentbrew.git ~/agentbrew && bash ~/agentbrew/scripts/install.sh run
+```
+
+Or try it without a clone:
 
 ```bash
 npx agentbrew              # try it — detects agents, installs recommended set, schedules drift repair
@@ -225,7 +231,7 @@ agentbrew sync --rollback       # restore from last pre-sync snapshot
 
 Every sync creates a timestamped snapshot. Pruning only touches entries agentbrew deployed — user-added items are always preserved.
 
-When an Agentfile is in effect (`--agentfile`, the global Agentfile, or a project Agentfile), the Agentfile decides the skill set. A plain `sync` installs the catalog recommended set only on a machine with no Agentfile; an Agentfile asks for it with `recommended: true`. A skill you remove from the Agentfile is pruned from its source on the next sync or `sync --pull`. Skills you installed by hand stay. An authoritative sync keeps a source that backs a skill the Agentfile lists, even when `sources:` does not name it. A source cache that cannot fast-forward (for example, after upstream rewrote history) is reset to upstream; local-only commits stay on a `salvage/<date>-<sha>` branch.
+When an Agentfile is in effect (`--agentfile`, the global Agentfile, or a project Agentfile), the Agentfile decides the skill set. A plain `sync` installs the catalog recommended set only on a machine with no Agentfile; an Agentfile asks for it with `recommended: true`. A skill you remove from the Agentfile is pruned from its source on the next sync or `sync --pull`. Skills you installed by hand stay. An authoritative sync keeps a source that backs a skill the Agentfile lists, even when `sources:` does not name it. It also keeps a source that `agentbrew install` added for a skill no Agentfile listed, so a hand install from a new source stays linked. A source cache that cannot fast-forward (for example, after upstream rewrote history) is reset to upstream; local-only commits stay on a `salvage/<date>-<sha>` branch.
 
 ## Shared semantic memory
 
@@ -319,6 +325,8 @@ agentbrew status               # configured + drift summary
 agentbrew status --fix         # detailed drift check + auto-repair
 agentbrew status --ci          # exit 1 on drift (CI-friendly)
 ```
+
+Every drift item ends with its fix (`— fix: <command>`). Each sync, scheduled repair, and error also adds one content-free line to `~/.local/share/agentbrew/logs/events.jsonl` (no telemetry; `AGENTBREW_EVENTS=0` turns it off). See [`docs/observability.md`](docs/observability.md).
 
 When the global CLI runs from a git checkout (for example after `npm link`), `agentbrew status` also checks that its `dist/` is current. Each build writes `dist/build-info.json` with the commit it came from. If the checkout later moved to a commit that changes `src/`, `templates/`, `package.json`, `package-lock.json`, or `tsup.config.ts`, status reports `CLI build: stale` with the rebuild command. `agentbrew status --fix` rebuilds in place.
 
@@ -448,7 +456,7 @@ node ~/.config/agentbrew/scripts/agent-perf.mjs report --session latest
 node ~/.config/agentbrew/scripts/agent-perf.mjs brief                  # 5-line summary for agents
 ```
 
-At session start, the `perf-brief` hook gives the agent a short brief of the slowest steps. After a turn with 5 or more minutes of tool time, the opt-in `perf-task-review` Stop hook asks the agent for a short "Time review" once (`AGENTBREW_PERF_REVIEW_MIN_SECS` changes the threshold; turn it on by listing it under `enabled:` in `~/.config/agentbrew/hooks-overlay/manifest.yaml`). `agentbrew sync` also sets the Claude Code status line to `agent-perf.mjs statusline`, unless you set your own. The `perf-review` skill explains how to read the report; the `session-report` skill covers tokens and cost.
+At session start, the `perf-brief` hook gives the agent a short brief of the slowest steps. After a turn with 5 or more minutes of tool time, the opt-in `perf-task-review` Stop hook asks the agent for a short "Time review" once (`AGENTBREW_PERF_REVIEW_MIN_SECS` changes the threshold; turn it on by listing it under `enabled:` in `~/.config/agentbrew/hooks-overlay/manifest.yaml`). The opt-in `poll-loop-hint` hook adds a hint when a Bash command polls with an `until`/`while` loop and `sleep`: run it in the background or use a blocking wait instead. `agentbrew sync` also sets the Claude Code status line to `agent-perf.mjs statusline`, unless you set your own. The `perf-review` skill explains how to read the report; the `session-report` skill covers tokens and cost.
 
 Row schema, privacy rules, hooks, and the full command reference: [`docs/agent-perf.md`](docs/agent-perf.md).
 
@@ -571,6 +579,7 @@ See [docs/COMPETITION.md](docs/COMPETITION.md) for the full analysis. Run `npm r
 agentbrew                              Status dashboard (auto-init on first run)
 agentbrew init [--force] [--skip-install] [--skip-sync]
                                        Detect agents + install recommended + sync (idempotent)
+                                       --skip-install: no source fetch, no skill installs
 agentbrew status [--verbose] [--fix] [--ci] [--json]
                                        Show agents, servers, sources, skills, drift
 agentbrew sync [--dry-run] [--no-prune] [--only <modules>] [--rollback]
@@ -660,7 +669,7 @@ npm run verify:build-pipeline          # npm ls + build + dist/cli.js --version
 npm run lint:rules                     # Minsky rule checks on this repo (part of verify)
 ```
 
-`npm run lint:rules` runs Minsky's deterministic rule checks (`scripts/check-rule-*.mjs`) against this repo through `src/adapters/rule-lint.minsky.ts`, instead of reimplementing them. It finds Minsky at `AGENTBREW_MINSKY_DIR` or `~/apps/tooling/minsky`. Without a checkout, or with one too old for `--repo`, each rule is skipped, not failed. Rule 9 requires Hypothesis, Success/Acceptance, Pivot, Measurement, and Anchor on every `- **ID**:` task block; `.prereg-allowlist` lists the older tasks that predate the gate. Minsky has no script for rules 8 and 16, so two local checks run in `npm run verify`: `scripts/check-rule-8-pattern-conformance.mjs` checks the VISION.md "Pattern conformance index" against each file's `Pattern:` comment, and `scripts/check-rule-16-defaults.mjs` fails when a CLI flag has no row in `docs/cli-flags-audit.md` saying why it is not the default.
+`npm run lint:rules` runs Minsky's deterministic rule checks (`scripts/check-rule-*.mjs`) against this repo through `src/adapters/rule-lint.minsky.ts`, instead of reimplementing them. It finds Minsky at `AGENTBREW_MINSKY_DIR` or `~/apps/tooling/minsky`. Without a checkout, or with one too old for `--repo`, each rule is skipped, not failed. Rule 9 requires Hypothesis, Success/Acceptance, Pivot, Measurement, and Anchor on every `- **ID**:` task block, with no grandfathered tasks; `npm run verify` also runs `@tasks-md/lint --require-prereg` on `TASKS.md`. Minsky has no script for rules 8 and 16, so two local checks run in `npm run verify`: `scripts/check-rule-8-pattern-conformance.mjs` checks the VISION.md "Pattern conformance index" against each file's `Pattern:` comment, and `scripts/check-rule-16-defaults.mjs` fails when a CLI flag has no row in `docs/cli-flags-audit.md` saying why it is not the default.
 
 `npm run verify` also runs `scripts/check-rule-3-test-first.mjs`, the test-first half of rule 3. It fails when the branch (committed or not) changes a non-test file under `src/` but changes no test file, unless a commit message on the branch has a `Test exemption: <reason>` line. It compares against `origin/main` (`--base <ref>` or `TEST_FIRST_BASE` to change it) and skips when that ref has no merge base.
 

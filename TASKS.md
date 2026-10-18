@@ -171,6 +171,97 @@
 
 ## P2
 
+- [ ] The installer says which Node version it found and how to upgrade it
+  - **ID**: install-node-version-message
+  - **Tags**: install, new-users, ux
+  - **Details**: With Node 18 installed (Volta), `scripts/install.sh plan` printed "Node.js 20 or newer is missing", so the person looks for a missing install instead of an old one. Print the found version and the fix for the version manager in use (`volta install node@22`, `fnm install 22`, `nvm install 22`, or `brew install node`).
+  - **Files**: `scripts/install.sh`, `INSTALL.md`
+  - **Output**: code
+  - **Acceptance**: with Node 18 on PATH, `install.sh plan` prints "Node.js 18 found; 20.11+ needed" and one upgrade command that matches the detected manager.
+  - **Hypothesis**: first-run installs that stop at the Node check and need a second attempt drop to zero in the install e2e.
+  - **Measurement**: `npm run test:install-e2e` with a Node 18 fixture.
+  - **Success**: the message names the found version and a working command.
+  - **Pivot**: if detection is fragile, print the version and the nodejs.org link only.
+  - **Anchor**: first install on a Mac new to the tools, 2026-10-18 (agentbrew recommended set + dotfiles core).
+
+- [ ] A red `main` and an out-of-sync lockfile are caught before users install
+  - **ID**: main-stays-installable
+  - **Tags**: ci, install, gates
+  - **Details**: `main` CI had failed since the last runs (Install step: `npm ci` "Missing: gcp-metadata@7.0.1 from lock file"), and `install.sh run` failed the same way for every new user. Add `npm ci --dry-run` (or a lockfile-sync check) to `lefthook.yml` pre-push and to `verify`, and make a failing `main` visible (badge in README or a scheduled CI run that opens an issue).
+  - **Files**: `lefthook.yml`, `package.json` (verify), `.github/workflows/ci.yml`, `README.md`
+  - **Output**: code
+  - **Acceptance**: a commit that changes `package.json` without the lockfile fails locally before push; a red `main` shows on the README badge.
+  - **Hypothesis**: days with a broken `npm ci` on `main` go from unknown to zero.
+  - **Measurement**: CI history for `main`; install e2e on the release tag.
+  - **Success**: no `main` run fails at Install for 30 days.
+  - **Pivot**: if the hook is too slow, run the dry-run only when `package*.json` changed.
+  - **Anchor**: first install on a Mac new to the tools, 2026-10-18 (agentbrew recommended set + dotfiles core).
+
+- [ ] Hook fixture tests pass on stock macOS, and CI proves it
+  - **ID**: hook-tests-macos-ci
+  - **Tags**: ci, hooks, macos, tests
+  - **Details**: CI runs only on `ubuntu-latest` (bash 5), but agentbrew targets Macs (bash 3.2, BSD tools, Volta/asdf node shims under `HOME`). On a stock Mac several hook fixture files failed: two are fixed in the macOS hook-tests PR; still failing are `gh-pr-body-requires-docs` Test 11, `goal-retro-before-stop`, `memory-sync-projects-session-end`, `perf-brief`, and `perf-task-review`. Add a `macos-latest` job for the hook fixture tests and fix the remaining five.
+  - **Files**: `.github/workflows/ci.yml`, `hooks/checks/*.test.sh`
+  - **Output**: code
+  - **Acceptance**: `bash hooks/checks/<name>.test.sh` passes for every hook on macOS bash 3.2, and the macOS CI job is green.
+  - **Hypothesis**: hook test failures seen only by Mac contributors go to zero.
+  - **Measurement**: the new macOS CI job.
+  - **Success**: green macOS job on `main` for 2 weeks.
+  - **Pivot**: if the macOS runner is too slow, run it nightly instead of per PR.
+  - **Anchor**: first install on a Mac new to the tools, 2026-10-18 (agentbrew recommended set + dotfiles core).
+
+- [ ] Tests never read or write the real `~/.config/agentbrew`, `~/.claude`, or the repo tree
+  - **ID**: tests-isolated-home
+  - **Tags**: tests, safety
+  - **Details**: After an install on the same Mac, the real `manifest.json` held test fixture names (`new-server`, `existing`), `vitest run` left untracked `context/chatgpt.md` and `context/claude-desktop.md` in the repo, and several tests fail only on a Mac that already has agentbrew (integration commands lifecycle and clean-slate sync, sanitize-history, storybook smoke, install-other not-found, mcp probe env). Give every test a temp `HOME` and output dir by default (vitest setup file), and fail a test that touches the real paths.
+  - **Files**: `vitest.config.ts`, a vitest setup file, the tests above
+  - **Output**: code
+  - **Acceptance**: running `npm run test:all` twice on a Mac with agentbrew installed leaves `~/.config/agentbrew`, `~/.claude*` and `git status` unchanged, and all tests pass.
+  - **Hypothesis**: tests that depend on the developer's own machine go to zero.
+  - **Measurement**: checksum of the real config dirs before/after `npm run test:all`; `git status --porcelain`.
+  - **Success**: no change and no failures.
+  - **Pivot**: if a global setup file breaks real-e2e, scope it to unit tests.
+  - **Anchor**: first install on a Mac new to the tools, 2026-10-18 (agentbrew recommended set + dotfiles core).
+
+- [ ] `sync` treats a missing `~/.claude/agents` folder as empty
+  - **ID**: sync-missing-agents-dir
+  - **Tags**: sync, new-users, bug
+  - **Details**: Every `agentbrew sync` on a new Claude Code setup prints "1 sync error(s): [agents] ENOENT: no such file or directory, scandir '~/.claude/agents'". A missing folder is normal; the error teaches people to ignore sync errors.
+  - **Files**: `src/sync/` (agents sync)
+  - **Output**: code
+  - **Acceptance**: `agentbrew sync` with no `~/.claude/agents` reports 0 sync errors and creates the folder only when it deploys an agent.
+  - **Hypothesis**: false sync errors on new machines go from 1 per sync to 0.
+  - **Measurement**: `agentbrew sync` output on a clean HOME.
+  - **Success**: zero errors.
+  - **Pivot**: none needed.
+  - **Anchor**: first install on a Mac new to the tools, 2026-10-18 (agentbrew recommended set + dotfiles core).
+
+- [ ] The install plan lists every behaviour change the recommended set makes
+  - **ID**: install-plan-discloses-behaviour
+  - **Tags**: install, new-users, safety, ux
+  - **Details**: The recommended set changes how Claude Code behaves beyond adding skills: 21 hooks, a goal contract that blocks edits after `/goal` until it is written (`goal-contract-before-edit`), a retro before stop, ~6 KB of always-loaded CLAUDE.md text, and (unless `claudePermissions: keep`) prompts off. `install.sh plan` shows none of these, and `install.sh run` has no flag for `claudePermissions: keep`. List them in `plan`, add `--keep-claude-permissions` (seeds state.yaml before init), and ask it as INSTALL.md question 4.
+  - **Files**: `scripts/install.sh`, `INSTALL.md`, `src/init.ts`
+  - **Output**: code
+  - **Acceptance**: `install.sh plan` prints the hook count, the `/goal` behaviour, the CLAUDE.md size and the permission default; `install.sh run --yes --keep-claude-permissions` leaves `permissions.defaultMode` unset.
+  - **Hypothesis**: people surprised by changed Claude behaviour after install go to zero.
+  - **Measurement**: install e2e asserts on plan text and settings.json.
+  - **Success**: both assertions pass.
+  - **Pivot**: if the list gets long, link to one generated doc instead.
+  - **Anchor**: first install on a Mac new to the tools, 2026-10-18 (agentbrew recommended set + dotfiles core).
+
+- [ ] Merging hooks into settings.json keeps existing commands byte-for-byte
+  - **ID**: hooks-merge-preserves-text
+  - **Tags**: hooks, sync
+  - **Details**: When sync rewrites `~/.claude/settings.json`, the person's own hook commands come back re-escaped (a literal newline in a printf string became `\n`). It still works, but backups and diffs show changes the person did not make.
+  - **Files**: `src/sync/hooks-sync.ts`
+  - **Output**: code
+  - **Acceptance**: a settings.json with a user hook containing a newline is unchanged byte-for-byte after `agentbrew sync` (apart from managed keys).
+  - **Hypothesis**: unexplained diffs in user hooks after sync go to zero.
+  - **Measurement**: unit test round-trip.
+  - **Success**: the round-trip test passes.
+  - **Pivot**: if JSON re-serialisation can't keep it, document it and keep the semantic check.
+  - **Anchor**: first install on a Mac new to the tools, 2026-10-18 (agentbrew recommended set + dotfiles core).
+
 - [ ] Make the official MCP Registry the default catalog lookup when it reaches 1.0
   - **ID**: flip-catalog-to-registry-first-at-ga
   - **Tags**: delegate, mcp, catalog, upstream

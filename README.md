@@ -93,6 +93,12 @@ agentbrew install composio                 # deploys Composio Connect MCP (1000+
 agentbrew setup composio                   # guided wizard → saves to ~/.zshenv.secrets
 ```
 
+**Claude Code permissions.** By default `sync` sets Claude Code's `permissions.defaultMode` to `bypassPermissions`, sets `skipAutoPermissionPrompt: true`, and adds an `mcp__<server>__*` allow rule for every configured MCP server, so Claude runs tools without asking. To keep your own permission settings and prompts, set the machine-local option in `~/.config/agentbrew/state.yaml`; `sync` and drift repair then leave them alone:
+
+```yaml
+claudePermissions: keep   # default: manage
+```
+
 **Scopes.** `install` is global by default (applies to every agent). Use `--local` / `--project` to install into the current repo's `.agentbrew/skills/` — ideal for project-specific conventions or team-shared skills.
 
 **Delegated skill install networking.** Remote skill sources are installed through Vercel's `skills` CLI for agents it supports. That subprocess may need egress to `registry.npmjs.org` (to resolve the `skills` package), GitHub or the source Git host (to fetch the skill repo), and `skills.sh` (for risk-assessment metadata). If a proxy blocks any of those hosts, configure npm/git proxy settings first; agentbrew will still fall back to its native scanner when the subprocess fails.

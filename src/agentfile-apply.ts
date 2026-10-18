@@ -117,7 +117,7 @@ function mergeAgentfileMcp(
   agentfile: Agentfile,
   state: AgentBrewState,
   authoritative: boolean,
-): { added: string[]; updated: string[]; removed: string[] } {
+): { added: string[]; updated: string[]; removed: string[]; adopted: string[] } {
   const resolvedServers = resolveAgentfileMcp(agentfile);
   // getStateServers returns a copy. Mutate this one working list and assign it
   // back once, so additions and prunes in the same apply both survive.
@@ -125,9 +125,16 @@ function mergeAgentfileMcp(
   const existingByName = new Map(stateServers.map((s) => [s.name, s]));
   const added: string[] = [];
   const updated: string[] = [];
+  const adopted: string[] = [];
 
   for (const server of resolvedServers) {
     const existing = existingByName.get(server.name);
+    // An Agentfile that lists a discovered server takes it over, so removing
+    // it from the Agentfile later prunes it like any other Agentfile server.
+    if (existing?.source === "discovered" && server.source !== "discovered") {
+      existing.source = server.source;
+      adopted.push(server.name);
+    }
     if (!existing) {
       stateServers.push(server);
       added.push(server.name);
@@ -146,13 +153,17 @@ function mergeAgentfileMcp(
   if (authoritative) {
     const agentfileServerNames = new Set(resolvedServers.map((s) => s.name));
     const preservedNames = state.memory?.enabled === true ? new Set([MEMORY_MANAGED_SERVER_NAME]) : new Set<string>();
-    const isKept = (s: McpServer): boolean => agentfileServerNames.has(s.name) || preservedNames.has(s.name);
+    // Servers `init` found already configured in an agent (source "discovered")
+    // belong to the person, not to any Agentfile. Dropping them here made the
+    // next MCP sync prune them from ~/.claude.json, ~/.cursor/mcp.json, etc.
+    const isKept = (s: McpServer): boolean =>
+      agentfileServerNames.has(s.name) || preservedNames.has(s.name) || s.source === "discovered";
     finalServers = stateServers.filter(isKept);
     removed = stateServers.filter((s) => !isKept(s)).map((s) => s.name);
   }
   if (added.length > 0 || removed.length > 0) state.mcpServers = finalServers;
 
-  return { added, updated, removed };
+  return { added, updated, removed, adopted };
 }
 
 /** Merge sources from Agentfile into state. Returns URLs added. */
@@ -721,6 +732,7 @@ export function applyAgentfile(
     mcp.added.length > 0 ||
     mcp.updated.length > 0 ||
     mcp.removed.length > 0 ||
+    mcp.adopted.length > 0 ||
     sourcesAdded.length > 0 ||
     commandDirs.changed ||
     agentDirs.changed ||

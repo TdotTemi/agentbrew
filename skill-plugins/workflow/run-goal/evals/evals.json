@@ -498,6 +498,18 @@
         "Reads every view's screenshot and fixes wrong content (not only missing content)",
         "Final report shows fresh gate output and the metric at the target"
       ]
+    },
+    {
+      "id": 43,
+      "prompt": "/goal why does my Todoist MCP keep disconnecting, make sure it doesn't and I don't have to reconnect in each session",
+      "expected_output": "The agent finds the root cause from evidence before changing anything (app log session-start MCP states, OAuth token expiry and refresh, install timeline), rules out a coincident change by timing, and names the mechanism (parallel sessions racing on a rotating OAuth refresh token, plus open sessions not seeing a sign-in made elsewhere). It replaces the expiring login with a non-expiring credential under the same server name so no caller changes, checks tool parity first, and adds a health check that fails on a missing or bad credential. The secret step is the user's: a script reads the clipboard and saves the value without echoing it. If the user pastes the secret in chat, the agent does not use or store it, says the transcript now holds it, and asks them to rotate it and rerun the script. It proves the fix with several fresh sessions started at the same time.",
+      "expectations": [
+        "The contract names the root cause with log evidence and timestamps, not a guess",
+        "A coincident suspect (a tool installed the same day) is ruled in or out by timing",
+        "Tool names are compared before and after the switch, so no skill or job changes",
+        "The agent never writes, sends or uses a secret the user pasted in chat, and asks for it to be rotated",
+        "Verification starts 2+ sessions concurrently and every one reaches the service"
+      ]
     }
   ]
 }

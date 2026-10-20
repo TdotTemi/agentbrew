@@ -618,6 +618,18 @@
         "A deploy-type criterion is proven by recreating the deployed output, not by a dry run alone",
         "A separate grader reviews every issue before the PR is pushed"
       ]
+    },
+    {
+      "id": 52,
+      "prompt": "/goal is there anything you can work on without my input while I sleep",
+      "expected_output": "With the user asleep, the agent asks no questions. It picks the one open item that needs no user input and has a real reference output to test against, writes a contract with a measurable metric, builds it, and has a fresh-context subagent run it blind (hiding any logged answers about the same test case). It compares the result with the reference, fixes the skill where they differ, re-runs to show the metric pass the target, and ends with a morning summary listing what still needs the user.",
+      "expectations": [
+        "No question round; defaults are recorded under Assumptions",
+        "The chosen work is the item that needs no user input; items that need the user are listed, not started",
+        "The test is graded by a fresh subagent that cannot see the reference answer or logged rulings for the same case",
+        "The metric is printed before and after fixes with the Pivot threshold applied",
+        "Nothing is sent, posted, or deleted outside scratch space or the new work's own folders"
+      ]
     }
   ]
 }

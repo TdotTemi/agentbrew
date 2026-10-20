@@ -171,6 +171,28 @@
 
 ## P2
 
+- [ ] The fast gate passes in a Linux cloud session, so cloud agents can trust it
+  - **ID**: gate-green-in-linux-cloud
+  - **Tags**: gate, tests, cloud
+  - **Details**: Fixed on 2026-10-20 (fyodoriv/agentbrew#292): the `hook-large-input-pipefail` fixture (jq now reads
+    the 300 KB body with `--rawfile`; Linux caps one argument at 128 KB) and the `instructions-sync` "readFileSync
+    throws" test (root ignores `chmod 000`; a directory now stands in for the file). `npm run verify:changed`
+    passes in the cloud up to `playwright-install`, which the cloud network blocks (`cdn.playwright.dev`; a
+    Chromium is preinstalled at `/opt/pw-browsers`). The full `npx vitest run` still has 15 failures that also
+    fail on `main` in the cloud. Three causes: root ignores file modes (`lint.test.ts` unreadable cases,
+    `manifest.test.ts`, `skills-sync.test.ts` symlink warning), macOS-only paths (`integration-infra.test.ts`
+    LaunchAgent and .zshrc, `mcp-sync-carveout-matrix.test.ts` copilot path, `integration.test.ts` sync
+    convergence and prune), and missing tools (`git-filter-repo`, Copier, storybook, sqlite backup, worktree-deps
+    cloning).
+  - **Files**: `scripts/verify.sh` (playwright step), the test files named in Details
+  - **Output**: code
+  - **Acceptance**: `npm run verify` passes on `main` in a Linux cloud container (root user, no Playwright CDN), and still passes on the Mac.
+  - **Hypothesis**: Both failures are test-harness assumptions about macOS, not product bugs; each takes a small test-only fix.
+  - **Measurement**: `npm run verify:changed` on `main` in a cloud session (pass/fail per step)
+  - **Success**: 0 failing steps in the cloud and on the Mac
+  - **Pivot**: a failure is a real product bug on Linux → fix the product code and add a Linux case to the test
+  - **Anchor**: found while shipping fyodoriv/agentbrew#287 on 2026-10-19 (AGENTS.md rule 11: scout while you work)
+
 - [ ] Skip `npm ci` when the lockfile is unchanged
   - **ID**: speed-up-npm-ci
   - **Tags**: perf, agents

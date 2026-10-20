@@ -273,7 +273,7 @@ function printAgentBloatFinding(finding: AgentBloatFinding, label?: string): voi
   print(`  ${icon} ${target} — ${finding.message}`);
 }
 
-/** Lint repo-owned skills, rule templates, and deployed Cursor .mdc rules for bloat. */
+/** Lint repo-owned skills, and rule templates for bloat. */
 function lintAgentBloat(): { errors: number; warnings: number } {
   console.log("");
   console.log(chalk.bold("Agent bloat\n"));
@@ -497,7 +497,7 @@ function lintBarePlaceholders(): { errors: number } {
   }
   console.log(
     chalk.dim(
-      `\n  Strict env-var interpolators importing Claude/Cursor configs crash on bare \${VAR} when the var is unset.\n  Run ${chalk.white("agentbrew sync")} to rewrite ${total} placeholder(s) to the resilient \${VAR:-} form.\n`,
+      `\n  Strict env-var interpolators importing agent MCP configs crash on bare \${VAR} when the var is unset.\n  Run ${chalk.white("agentbrew sync")} to rewrite ${total} placeholder(s) to the resilient \${VAR:-} form.\n`,
     ),
   );
   return { errors: sweep.length };

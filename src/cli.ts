@@ -197,6 +197,8 @@ interface SyncCommandOptions {
   verbose?: boolean;
   agentfile?: string;
   recommended?: boolean;
+  workspaces?: string;
+  workspaceName?: string;
 }
 
 async function handleSyncCommand(options: SyncCommandOptions): Promise<void> {
@@ -220,6 +222,7 @@ function syncStory(options: SyncCommandOptions): string {
 }
 
 async function runSyncCommand(options: SyncCommandOptions): Promise<void> {
+  if (!options.rollback) await handleSyncWorkspaces(options);
   if (await handleSyncEarlyExits(options)) return;
   if (await refuseSyncOnLockDrift()) return;
   if (!options.dryRun) await emitNativePluginOutput();
@@ -259,6 +262,13 @@ async function runSyncCommand(options: SyncCommandOptions): Promise<void> {
   } else {
     await runSyncParallel(modules, runnerOpts);
   }
+}
+
+/** In workspace mode, swap the base Agentfile for one merged with every per-repo Agentfile. */
+async function handleSyncWorkspaces(options: SyncCommandOptions): Promise<void> {
+  const { prepareWorkspaceAgentfile } = await import("./core/workspaces.js");
+  const merged = prepareWorkspaceAgentfile(options);
+  if (merged) options.agentfile = merged;
 }
 
 async function handleSyncEarlyExits(options: SyncCommandOptions): Promise<boolean> {
@@ -381,6 +391,8 @@ function registerSyncCommand(program: Command): void {
     .option("--discover", "Discover user-added MCP servers in agent configs")
     .option("--verbose", "Show per-agent and per-skill detail (default: summary only)")
     .option("--agentfile <path>", "Apply an Agentfile from a specific path before syncing")
+    .option("--workspaces <paths>", "Also apply every per-repo Agentfile in these workspace folders (comma-separated)")
+    .option("--workspace-name <name>", "Like --workspaces, for one workspace named in the tasks CLI config")
     .action(handleSyncCommand)
     .addHelpText(
       "after",
@@ -393,7 +405,8 @@ Examples:
   agentbrew sync --only mcp,rules     Sync only MCP servers and rules (skips install)
   agentbrew sync --discover           Show user-added servers not in agentbrew
   agentbrew sync --rollback           Restore configs from last snapshot
-  agentbrew sync --agentfile ./Agentfile.yaml  Apply a specific Agentfile`,
+  agentbrew sync --agentfile ./Agentfile.yaml  Apply a specific Agentfile
+  agentbrew sync --workspaces ~/apps/tooling,~/apps/acme  Apply every repo Agentfile in both workspaces`,
     );
 }
 

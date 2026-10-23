@@ -6,6 +6,7 @@ import chokidar from "chokidar";
 import { sync as writeFileAtomicSync } from "write-file-atomic";
 import { errorMessage } from "../core/errors.js";
 import { logSkipped } from "../core/logger.js";
+import { userSchedulersTargetThisHome } from "../core/user-scheduler.js";
 import { autoRepairOptedOut } from "../settings.js";
 import { ICON_SUCCESS } from "../ui/output.js";
 import { expandHome } from "../utils.js";
@@ -267,7 +268,11 @@ function showLaunchAgentStatus(): void {
 function showSystemdStatus(): void {
   if (process.platform !== "linux" && !isSystemdTimerInstalled()) return;
   if (isSystemdTimerInstalled()) {
-    console.log(`  ${ICON_SUCCESS} systemd timer installed (30-min auto-repair)`);
+    if (userSchedulersTargetThisHome()) {
+      console.log(`  ${ICON_SUCCESS} systemd timer installed (30-min auto-repair)`);
+    } else {
+      console.log(`  ${chalk.yellow("○")} systemd units written, not enabled: HOME is not your home folder`);
+    }
   } else if (process.platform === "linux" && hasSystemctl()) {
     console.error(`  ${chalk.dim("○")} systemd timer not installed`);
     console.log(chalk.dim(`    ${installHint()}`));

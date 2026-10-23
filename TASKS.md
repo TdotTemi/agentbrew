@@ -279,18 +279,18 @@
   - **Acceptance**: The owner runs `npm run publish:latest` in a real terminal (browser 2FA needs a TTY); afterwards the git tag, npm `latest`, and `package.json` version match. GitHub Actions stays off, so no workflow step is required.
   - **Blocked**: needs-owner-tty — npm publish needs the owner's browser 2FA in a real terminal; agents cannot run it.
 
-- [ ] `agentbrew` with a scratch HOME on Linux never changes the real user's crontab or systemd timer
-  - **ID**: scratch-home-linux-scheduler
-  - **Tags**: install, scheduler, safety
-  - **Details**: The macOS fix routes every `launchctl` change through `src/core/launchctl.ts`, which skips it when HOME is not the user's home folder. Linux has the same per-user problem: `src/sync/cron.ts` pipes a new table to `crontab -` (the real user's crontab, with scratch-HOME paths), and `src/sync/systemd.ts` runs `systemctl --user enable --now` and `disable --now agentbrew-check.timer`, which act on the real timer by name. Reuse the same HOME check (renamed for all schedulers) before each change.
-  - **Files**: `src/sync/cron.ts`, `src/sync/systemd.ts`, `src/core/launchctl.ts`, their tests
+- [ ] The scheduler call-site tests also catch shell strings and absolute tool paths
+  - **ID**: scheduler-call-site-lint
+  - **Tags**: tests, scheduler
+  - **Details**: `src/core/launchctl.test.ts` and `src/core/user-scheduler.test.ts` fail when a `src` file spawns `launchctl`, `crontab`, or `systemctl` outside `src/core/`, but only for a spawn whose first argument is the tool name. They miss an absolute path (`"/usr/bin/crontab"`), a shell string (`execSync("sh -c 'crontab -'")`), and a tool name passed in a variable. Today no such call exists.
+  - **Files**: `src/core/launchctl.test.ts`, `src/core/user-scheduler.test.ts`
   - **Output**: code
-  - **Acceptance**: with HOME set to a scratch folder, `auto-sync install` and `uninstall` on Linux make no `crontab` write and no `systemctl --user` change.
-  - **Hypothesis**: the HOME check before each scheduler change drops real crontab or timer changes from scratch-HOME runs from possible to 0.
-  - **Measurement**: a vitest case with fake `crontab` and `systemctl` first on PATH and a scratch HOME.
-  - **Success**: the fakes record no change call.
-  - **Pivot**: if HOME detection is unreliable on Linux, read the home folder from `getent passwd`.
-  - **Anchor**: review of the PR for `init-scratch-home-launchd` (2026-10-23).
+  - **Acceptance**: a fixture file with each of the three forms fails the call-site tests.
+  - **Hypothesis**: matching tool names inside string literals, with or without a path, drops undetected direct scheduler calls from 3 known forms to 0.
+  - **Measurement**: a vitest case that runs the call-site check on fixture text for each form.
+  - **Success**: all three forms are flagged, and the real tree still passes.
+  - **Pivot**: if string matching flags too many hint strings, require a spawn call within the same statement.
+  - **Anchor**: review of the PR for `scratch-home-linux-scheduler` (2026-10-23).
 
 ## P3
 

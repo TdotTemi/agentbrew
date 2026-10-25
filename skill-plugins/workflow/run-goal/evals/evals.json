@@ -1476,6 +1476,19 @@
         "Parks actions the safety check blocked and asks about them in one batch at the end",
         "Reports previously declined doctor items as recorded decisions, not as fixes"
       ]
+    },
+    {
+      "id": 127,
+      "prompt": "/new-goal the trackpad used to let me change windows with three fingers up, now it makes me use four. check what it used to be before and revert that",
+      "expected_output": "The agent reads the pre-install backup and dated snapshots before changing anything, reports the original values (three-finger drag off, 3- and 4-finger swipes both on), and explains why 4 fingers are still needed (the new values are not live yet). It restores the exact original values on both trackpad domains, applies them without a logout, updates the open PR so the preference gives the same result, prints live values next to backup values, and asks the user to try the gesture before calling the goal met.",
+      "expectations": [
+        "Reads the pre-change backup before writing any setting",
+        "Restores the exact original values, not an approximation",
+        "Applies the change live or tells the user which logout is needed (the Mac, not the app)",
+        "Prints live values next to backup values as evidence",
+        "Updates the open PR so the shared preference matches the restored state",
+        "Asks the user to test the gesture and waits for the answer"
+      ]
     }
   ]
 }

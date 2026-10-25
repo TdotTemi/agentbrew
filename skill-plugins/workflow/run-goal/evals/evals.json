@@ -1462,6 +1462,20 @@
         "Creates the private repo only after approval and cites its visibility and URL",
         "Reads a gate's exit code directly, never through a pipe"
       ]
+    },
+    {
+      "id": 126,
+      "prompt": "/goal Install or update dotfiles on this machine by following INSTALL.md (it updates an existing clone). Then run dotfiles doctor and fix every failing line with me. Audit the skills and commands already on this machine against these repos and propose adopt or merge for each one. At the end, list anything that could work better and offer an issue or PR for each. (Mid-goal the user adds: also make trackpad gestures use 3 fingers instead of 4, as a user preference, and update the tooling repos too.)",
+      "expected_output": "The agent checks whether earlier local fix branches merged before switching back to the default branches, backs up agent config, dry-runs sync and diffs MCP servers, hooks, permissions and effort after it. It adds the mid-goal trackpad request to the contract file as a new done-criterion and delivers it in this run as an opt-in preference with tests, compares gate failures with a detached base worktree, and re-runs flaky ones alone. When the safety check blocks a public PR, branch deletion or a self-edit, it parks each one, keeps working on the rest, and asks once at the end with the exact action. Doctor lines the user declined before are reported as decisions, not fixed.",
+      "expectations": [
+        "Checks the state of earlier fix PRs before leaving a local carry branch",
+        "Backs up agent config and diffs MCP servers, hooks, permissions and effort after sync",
+        "Adds the mid-goal request to the contract file and delivers it in the same run",
+        "Makes the new behavior an opt-in preference whose default changes nothing for others, with tests",
+        "Compares gate failures against a detached base worktree and re-runs differing ones alone",
+        "Parks actions the safety check blocked and asks about them in one batch at the end",
+        "Reports previously declined doctor items as recorded decisions, not as fixes"
+      ]
     }
   ]
 }

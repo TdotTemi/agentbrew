@@ -1464,7 +1464,31 @@
       ]
     },
     {
-      "id": 130,
+      "id": 127,
+      "prompt": "/goal Build an ugly but working proof of concept so I can see widget X from app B running inside app A. Update the design doc with findings and answer questions Q1-Q4. End with draft PRs with screenshots and leave the app open with test steps.",
+      "expected_output": "The agent prints the goal contract first and asks one question round, about the data source (a live backend or simulated data). It proves the riskiest integration first: app A loads widget X from app B's local dev server, tested from the page itself, before any polish. Each draft PR embeds screenshots that load. Each answer to Q1-Q4 is in the design doc under its own heading, checked on the rendered page. The final message names the open browser tab and gives numbered test steps.",
+      "expectations": [
+        "Prints the goal contract first",
+        "Asks at most one question round (for example: live backend or simulated data)",
+        "Proves the riskiest integration first: the cross-app load, tested from the page, before any polish",
+        "Each draft PR has embedded images that load",
+        "Each answer to Q1-Q4 is in the doc under its own heading, checked on the rendered page",
+        "The final message names the open browser tab and gives numbered test steps"
+      ]
+    },
+    {
+      "id": 128,
+      "prompt": "/goal ship my open feature branch, then continue the queue: finish open PRs, then fix the open issues",
+      "expected_output": "Before it starts on any queued issue, the agent lists unmerged local branches and worktrees of every session (not only open PRs), finds a sibling branch that already fixes those issues, and compares it with its own plan before writing code. It continues or builds on that branch, or parks the choice for the user, instead of making a second set of fixes. A pre-push gate failure is reproduced alone on the unchanged base before it is called load-only.",
+      "expectations": [
+        "Runs the open-work listing (unmerged branches and worktrees, not only gh pr list) before starting each queued issue",
+        "Names a sibling session's branch that covers the same issues and does not push a duplicate fix over it",
+        "Reruns a failing pre-push test alone and on the unchanged base before calling it a load flake",
+        "Gives each fix a fresh-context review and a second review of the fix round before merge"
+      ]
+    },
+    {
+      "id": 131,
       "prompt": "/goal Install or update agentbrew on this machine by following INSTALL.md (it updates an existing clone). Then run `agentbrew sync` so every agent gets the current rules. Audit the skills and commands already on this machine against these repos and propose adopt or merge for each one. From now on, extend these repos instead of building local copies. At the end, list anything that could work better and offer an issue or PR for each.",
       "expected_output": "The agent prints the contract, then reuses the install choices already saved on the machine (agentbrew config, LaunchAgents, shell rc) instead of re-asking them. It snapshots MCP servers and hooks before the install and diffs them after. It runs install.sh and sync, reads their exit codes, and checks that the deployed rules match the repo template. It treats a sync warning as a lead and checks it in the source. When an earlier audit page exists, it re-checks each old verdict against the files and corrects the wrong ones (an app-managed folder marked for deletion, a merge target in a third-party repo). It updates that same page instead of making a new one, turns 'from now on' into a rule in the user's rules file, and posts no issue or PR without a yes.",
       "expectations": [

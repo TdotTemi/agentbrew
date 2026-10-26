@@ -65,7 +65,7 @@
         "Gives a command table with a real example per command",
         "Lists what runs by itself separately",
         "Summarizes rules, memory, settings, hooks, and permissions without pasting whole files",
-        "Fixes a wrong line at its source, never in a generated overview"
+        "Points to the source file for a wrong line and edits it only when the user asks"
       ]
     }
   ]

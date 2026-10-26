@@ -8,8 +8,9 @@ readable map, not drift numbers.
 
 Every answer comes from the source files. A generated overview (a
 `SETUP.md`, a dashboard) is a view, never a home for facts. When a line looks
-wrong, fix the source (the skill's frontmatter, the rules source, the memory
-file), then regenerate the view.
+wrong, point to its source (the skill's frontmatter, the rules source, the
+memory file) and offer to update it there; edit it only when the user asks,
+then regenerate the view.
 
 ## Full setup overview
 
@@ -48,7 +49,7 @@ When the user asks what they can type:
    built-in ones.
 
 When the user keeps a hand-written command table (in a memory file or a
-README), that table is the home: print it as is and keep it current when a
+README), that table is the home: print it as is, and offer to update it when a
 skill is added or renamed. Never keep a second copy in a skill.
 
 For one command, answer from its own `SKILL.md`: what it does, its

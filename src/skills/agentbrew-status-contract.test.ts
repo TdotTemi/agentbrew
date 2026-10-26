@@ -128,7 +128,7 @@ describe("agentbrew-status skill contract", () => {
     requireTerms(expectationText(evalMatching(/what commands can I type/i)), [
       /real example per command/i,
       /runs by itself/i,
-      /at its source/i,
+      /points to the source file/i,
     ]);
   });
 

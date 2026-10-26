@@ -253,4 +253,20 @@ describe("the /work built-in command (#440)", () => {
     expect(text).toMatch(/`path`/);
     expect(text).toMatch(/userOnly/);
   });
+
+  it("runs every step back to back and asks the saved questions once, at the end (#508)", async () => {
+    const { readFileSync } = await import("node:fs");
+    const { join, resolve } = await import("node:path");
+    const text = readFileSync(join(resolve(import.meta.dirname, "..", ".."), "commands", "work.md"), "utf-8");
+    expect(text).toMatch(/back to back/);
+    expect(text).not.toMatch(/one at a time/);
+    expect(text).toMatch(/`stopOnlyFor`/);
+    expect(text).toMatch(/`questions`/);
+    expect(text).toMatch(/blocked.*one line.*next step/is);
+    // The stop list in work.md matches the one `agentbrew work --json` returns.
+    const { WORK_STOP_ONLY_FOR } = await import("../work.js");
+    for (const reason of WORK_STOP_ONLY_FOR) {
+      expect(text.toLowerCase()).toContain(reason.toLowerCase().replace(/\.$/, ""));
+    }
+  });
 });

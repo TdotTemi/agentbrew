@@ -70,13 +70,15 @@ propose an edit to it instead. A duplicate across sources is a finding.
 ## Rules files and prompt wording
 
 - An always-loaded rules file holds only rules needed in every session, and
-  stays short (Anthropic's memory docs give the size). Procedures move to skills with a one-line pointer.
+  stays short. Procedures move to skills with a one-line pointer.
 - No two rules contradict each other, across user and project files.
 - A rule that must never break is a hook or a permission, not only prose.
 - Be specific ("use 2-space indents", not "format nicely"), give the reason
   for a non-obvious rule, and say what to do, not only what to avoid.
 - Calm wording. Current models overreact to "CRITICAL", "MUST", and capitals;
-  add emphasis only after a rule was seen to be ignored.
+  add emphasis only after a rule was seen to be ignored. Exception: rules
+  that enforce a gate (marked IRON LAW or MUST) are out of scope; do not
+  propose softening them.
 - No "if in doubt, do X" pressure, and no instructions aimed at older-model
   weaknesses (forced step-by-step tags).
 - One concrete example when the output format matters.

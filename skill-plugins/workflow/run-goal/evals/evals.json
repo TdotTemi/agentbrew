@@ -1462,6 +1462,19 @@
         "Creates the private repo only after approval and cites its visibility and URL",
         "Reads a gate's exit code directly, never through a pipe"
       ]
+    },
+    {
+      "id": 129,
+      "prompt": "/goal ok so um basically I want the the deploy notes thing fixed, the one that keeps posting twice, and also maybe we should redo the whole notifications page at some point, but first I need to know if the duplicate is from the cron or the webhook",
+      "expected_output": "The agent fixes dictation errors silently and reads the text for intent. It names the chain (find the duplicate's source first, then fix it) and makes the upstream step the goal. It parks the notifications page redesign as out of scope instead of starting it. It looks up the cron and webhook config itself instead of asking which one fires. The contract lists small chunks with one check each, riskiest first, plus a Parked line. Goal check lines quote the key log lines word for word. The final report lists each assumption marked by its source, and the retro updates an existing memory entry instead of adding a duplicate.",
+      "expectations": [
+        "Names the decision chain and makes finding the duplicate's source the first chunk",
+        "Parks the notifications page redesign under Out of scope or Parked, and does not start it",
+        "Reads the cron and webhook config itself instead of asking the user which one fires",
+        "Lists chunks with one check each, riskiest first",
+        "Quotes the key log or output lines word for word in Goal check lines",
+        "Marks each assumption in the final report as my choice, from a source, or you said"
+      ]
     }
   ]
 }

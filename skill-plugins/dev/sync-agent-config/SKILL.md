@@ -58,6 +58,11 @@ agentbrew status --fix     # confirm no remaining drift (and auto-repair if any)
 If over budget, check for cross-section duplication (Git Safety, Commit Format, Dependency
 Policy appear in both template and shared-rules.md). See `docs/instructions-analysis.md` for trimming guidance.
 
+## Verify in a Fresh Session
+
+Model, effort, memory, and new skills load only in a new session. Check them
+with a headless `init` record: [references/verify-fresh-session.md](references/verify-fresh-session.md).
+
 ## What Gets Synced Where
 
 ```

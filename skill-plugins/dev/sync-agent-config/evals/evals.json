@@ -33,6 +33,17 @@
         "Checks for duplicated sections between templates and shared rules",
         "Runs `agentbrew status --fix` after changes to confirm no drift remains"
       ]
+    },
+    {
+      "id": 4,
+      "prompt": "I changed the default model and added a new skill. Check they are live without restarting this session.",
+      "expected_output": "The agent syncs, then explains that the model and a skill created mid-session load only in a new session. It runs a fresh headless claude -p session with stream-json, selects the init line by subtype, and reports the model and slash commands from it. It does not ask the model to describe its own setup.",
+      "expectations": [
+        "Says which changes need a new session",
+        "Runs a fresh headless session and selects the init line by subtype",
+        "Reports the model and the new skill from the init record",
+        "Does not rely on the model describing its own setup"
+      ]
     }
   ]
 }

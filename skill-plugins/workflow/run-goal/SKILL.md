@@ -478,8 +478,8 @@ in full, as in Phase 4), and what to do next. When you cannot publish, write
 the HTML file and give its full path. Build the page from the shape below;
 it is also the chat fallback when you cannot write HTML. Keep it short.
 
-In chat, give the page link, a one-line result, and the next-action
-questions, each with its full context. Do not paste the whole report.
+In chat, give the link, a one-line result, and the next-action questions, each
+in full. Do not paste the whole report. Results across sessions: [references/multi-session-brief.md](references/multi-session-brief.md).
 
 ```markdown
 ## Goal result: met | partly met | blocked

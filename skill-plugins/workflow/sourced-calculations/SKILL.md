@@ -27,6 +27,8 @@ inflation, hours), use the first source that exists:
 1. **The user's own records.** Actual sales and costs, customer counts,
    marketing spend and results, invoices, bank exports, time logs. Look them
    up yourself first, with the tools and connectors you have, before you ask.
+   Stay read-only and open only sources relevant to this question; ask
+   before opening a connector the user did not mention.
 2. **Ask the user.** When the data should exist but you cannot reach it, name
    exactly what is missing and why it matters ("monthly sales for last year",
    "ad spend and orders by month").

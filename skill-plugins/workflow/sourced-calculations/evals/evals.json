@@ -21,7 +21,7 @@
         "Checks the 3% against the user's own history before using it",
         "Marks the 3% as 'You said' or replaces it with a data-based rate, with the reason",
         "Puts the inputs, sources, and steps in the deck, not only in chat",
-        "Notes when sales grow faster than costs and widens the margin by itself"
+        "Notes that sales growing faster than costs widens the margin by itself, and flags or corrects it"
       ]
     },
     {

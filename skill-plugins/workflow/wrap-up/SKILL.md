@@ -25,7 +25,7 @@ exactly what is left.
    `unpushed`, `branch`, `pr`, or `unknown`, with paths, branch names and
    counts only. Exit 1 means something is open. A squash-merged branch is not
    `branch` open work, even after the default branch changed the same lines,
-   unless the default branch reverted it.
+   unless the default branch reverted it; nor is a branch whose tip is a merged PR's head (needs `gh`).
 3. Add what no script can see: promises in the transcript ("I'll add a test
    later", a step the user asked for that you skipped), failing checks you
    left, review comments you did not answer, and steps that need the owner
@@ -98,9 +98,9 @@ and the report. Never post anywhere else (Slack, Jira, email) to wrap up.
 
 ## 4. Report
 
-End with one self-contained HTML page (shared-rules **## Long-run reports**):
-publish it as a private Artifact when the Artifact tool exists, else send the
-file or give its full path. It holds:
+End with a published Artifact (shared-rules **## Long-run reports**), not a
+loose HTML file. Only without the Artifact tool or with private data, send a
+self-contained HTML file or give its full path. It holds:
 
 - **Delivered:** each PR link, merged.
 - **Draft:** each draft PR link and its pending task ids.

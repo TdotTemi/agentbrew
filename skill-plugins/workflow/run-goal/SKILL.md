@@ -28,10 +28,9 @@ Install once: `agentbrew install run-goal`. Then type a goal in Claude Code:
 /goal let users export their orders as CSV from the web app's orders page, with tests and docs, and ship it
 ```
 
-The second example is a bug fix, the most common kind of goal. It names the
+The second example is a bug fix, the most common kind of goal: it names the
 end state, asks for a failing test first, and approves the PR. The third is a
-feature in a web app: it names what users can do, what must come with it
-(tests, docs), and approves the PR.
+web app feature: what users can do, what comes with it (tests, docs), a PR.
 
 What you will see:
 
@@ -75,14 +74,15 @@ or "impossible". The checker has no tools. It sees only what you wrote.
 
 So:
 
-- Print evidence (command, exit code, key output line, PR URL) when you finish
-  each done-criterion. A claim with no evidence reads as "not yet met".
+- Print evidence (command, exit code, key output quoted word for word, PR URL)
+  per done-criterion. No evidence, or only a summary, reads as "not yet met".
 - When you are hopelessly blocked, say so in plain words. The checker can then
   return "impossible" and release the session.
 
 ## Phase 1 — Intake (read only, a few minutes at most)
 
 1. Copy the raw goal text verbatim. You will compare against it at the end.
+   Shape a long, dictated, or vague goal first: [references/goal-intake.md](references/goal-intake.md).
 2. Load the repo context: `AGENTS.md`/`CLAUDE.md`, the task backend, and the
    project-entry script if the repo has one.
 3. Search memory and mistake notes for the goal's topic, if a memory tool exists.
@@ -491,8 +491,8 @@ questions, each with its full context. Do not paste the whole report.
 
 **Metric**: <baseline> → <now> (target <target>) via `<command>`
 **Changes**: <PRs, commits, files>
-**What went wrong**: <bullets>
-**What to improve**: <bullets>
+**What went wrong**: <bullets> · **What to improve**: <bullets>
+**Assumptions**: <each marked "my choice" (why, what data would replace it), "from <source>", or "you said">
 **Skills updated**: <every skill used, run-goal included → its edit or new eval + PR, or the task for a third-party skill>
 **Needed from you**: <the review or the one action, or "nothing">
 ```

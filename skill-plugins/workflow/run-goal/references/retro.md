@@ -93,6 +93,19 @@ If the agent has a memory tool, store the reusable lessons: decisions with
 their reasons, errors with their fixes, and user corrections. Store no
 secrets and no raw transcripts.
 
+Keep the memory clean while you store:
+
+- Update an existing entry before you create a new one, and delete entries
+  that turned out to be wrong.
+- One fact per entry. Write absolute dates, not "yesterday".
+- Skip what the repo or git history already records.
+- When the goal measured a number (a count, a balance, a timing), store the
+  final value with its date. The next run then has a baseline.
+
+When the user corrected how you work, or a standing rule turned out to be
+missing, update the source of the user's rules too: `AGENTS.md`, or the file
+that generates `CLAUDE.md`. Keep it short: each rule must change behavior.
+
 A skill that worked as written still gets an edit, such as a new eval case.
 An existing eval that already covers the run is not an update. The
 `goal-retro-before-stop` hook rejects retro lines that say "no change",

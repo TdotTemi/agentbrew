@@ -62,6 +62,7 @@ agentbrew catalog --bundles               # list bundles and their members
 agentbrew install review-tasks            # tasks.md /review-tasks: audit a task queue for stale or misprioritized work
 agentbrew install wrap-up                 # /wrap-up: deliver finished work, draft the rest as a leak-checked PR + task
 agentbrew install review-pr               # /review-pr: review a PR with a per-run folder and a verify pass; posts only on your yes
+agentbrew install sourced-calculations    # every computed number shows its inputs, sources, steps, and assumptions
 agentbrew install --refresh-rules --dry-run   # preview catalog rule text updates (rules only); drop --dry-run to apply
 agentbrew install @anthropic/mcp-proxy    # any npm package (auto-detected as MCP)
 agentbrew install sqlite -- uvx mcp-server-sqlite   # any command as an MCP server

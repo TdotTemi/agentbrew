@@ -478,8 +478,8 @@ blockers (each explained in full, as in Phase 4), and what to do next. Only
 without an Artifact tool or with private data, write a self-contained HTML
 file and give its full path. Build it from the shape below (also the chat fallback). Keep it short.
 
-In chat, give the page link, a one-line result, and the next-action
-questions, each with its full context. Do not paste the whole report.
+In chat, give the link, a one-line result, and the next-action questions, each
+in full. Do not paste the whole report. Results across sessions: [references/multi-session-brief.md](references/multi-session-brief.md).
 
 ```markdown
 ## Goal result: met | partly met | blocked

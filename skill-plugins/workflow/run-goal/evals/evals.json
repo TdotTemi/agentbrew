@@ -1646,6 +1646,19 @@
         "Quotes the key log or output lines word for word in Goal check lines",
         "Marks each assumption in the final report as my choice, from a source, or you said"
       ]
+    },
+    {
+      "id": 142,
+      "prompt": "/goal overnight: finish the three open migration tasks in parallel worktrees and have a summary ready for me in the morning",
+      "expected_output": "The agent runs the workers, then builds one brief page from every session that ran overnight. It reads each session's messages (not only tool names), checks the final tool results before it marks a merge or deploy as done, and marks unproven claims CHECK. The page puts at most three do-first items on top, numbered quick answers each with a recommendation and reason, then a done log grouped by repo with finish times and evidence links, then resume phrases. Chat gets the link, the top three, and the quick answers.",
+      "expectations": [
+        "Collects results from every session that ran in the window, excluding the current one",
+        "Verifies each claimed merge, deploy, or send against tool results and marks unproven ones CHECK",
+        "Puts at most three do-first items at the top of the page",
+        "Numbers the quick answers and gives a recommendation with a reason for each",
+        "Lists done items with finish times and evidence links",
+        "Keeps a worker's full recommendation instead of only its first step"
+      ]
     }
   ]
 }

@@ -1121,9 +1121,9 @@
     {
       "id": 98,
       "prompt": "/goal deliver all unblocked tasks in this repo overnight (unattended run in Claude Code; the Artifact tool is available). By morning two tasks shipped as merged PRs, and a third is blocked: its release step needs a signing key that only the user holds.",
-      "expected_output": "The agent ends the run with one self-contained HTML report page, published with the Artifact tool, not a long chat message. The page shows what was done (each task with its PR and evidence), the blocker, and what to do next. It builds the page from the skill's final report shape and puts no secrets in it. The blocker is explained in full: what a signing key is in plain words, why the release step cannot run without it, the options (the user signs the release, the user grants a scoped key, or the release waits), and what each option changes for the user. In chat, the agent gives the page link, a one-line result, and the next-action question with the same full context, and does not paste the whole report.",
+      "expected_output": "The agent ends the run with a published Artifact, not a long chat message and not a loose HTML file. It shows what was done (each task with its PR and evidence), the blocker, and what to do next. It builds the page from the skill's final report shape and puts no secrets in it. The blocker is explained in full: what a signing key is in plain words, why the release step cannot run without it, the options (the user signs the release, the user grants a scoped key, or the release waits), and what each option changes for the user. In chat, the agent gives the page link, a one-line result, and the next-action question with the same full context, and does not paste the whole report.",
       "expectations": [
-        "The final report is one self-contained HTML page, published with the Artifact tool",
+        "The final report is a published Artifact, not a loose HTML file",
         "The page shows the shipped tasks with evidence, the blocker, and the next steps",
         "The blocker says what the signing key is in plain words, why the step is blocked, the options, and what each option changes for the user",
         "No secret or key material appears in the page or the chat",
@@ -1133,20 +1133,20 @@
     {
       "id": 99,
       "prompt": "/goal vastly improve the UI+UX of the app so that it's super comfortable to use and modern (mid-goal the user adds: also make checkup and other long runs end with an HTML report of done / blockers / next, then ask me next actions; always prefer HTML at the end in all apps)",
-      "expected_output": "Before any edit the agent takes a baseline it can re-run: an axe + touch-target + text-size audit of every view on phone and desktop, and taps per everyday job. The contract names a blind judge. It asks one visual-direction question, because the answer changes what it builds. The mid-goal request joins the contract as a new criterion, ships as its own PR, and is saved as a durable preference (memory, or noted as already in the shared rules). After the redesign it shows before/after screenshots to a fresh agent as A/B pairs in random order, keeps the key away from that agent, scores the preference against the key, and fixes the real issues the judge names. It audits the settled screen, with reduced motion, because a fade-in reads as low contrast. It opens the views on a scratch copy of the user's real data, where 100+ items show that lists need caps. A fresh no-cache gate on main catches a flaky test from earlier in the session, and the agent fixes it with a measured flake rate before and after. The run ends with an HTML report (results, before/after, blockers, next), then a next-action question.",
+      "expected_output": "Before any edit the agent takes a baseline it can re-run: an axe + touch-target + text-size audit of every view on phone and desktop, and taps per everyday job. The contract names a blind judge. It asks one visual-direction question, because the answer changes what it builds. The mid-goal request joins the contract as a new criterion, ships as its own PR, and is saved as a durable preference (memory, or noted as already in the shared rules). After the redesign it shows before/after screenshots to a fresh agent as A/B pairs in random order, keeps the key away from that agent, scores the preference against the key, and fixes the real issues the judge names. It audits the settled screen, with reduced motion, because a fade-in reads as low contrast. It opens the views on a scratch copy of the user's real data, where 100+ items show that lists need caps. A fresh no-cache gate on main catches a flaky test from earlier in the session, and the agent fixes it with a measured flake rate before and after. The run ends with a published Artifact (results, before/after, blockers, next), then a next-action question.",
       "expectations": [
         "Baseline audit numbers and taps per job are recorded before the first edit, and the same script measures the after state",
         "The blind judge sees A/B in random order without the key; the agent scores the preference against the hidden key and reports it as a fraction",
         "The contrast audit runs on the settled screen (reduced motion), not on a page that is still fading in",
         "The user's real data is opened read-only on a scratch copy, and the defects it shows (oversized lists) are fixed before the report",
         "The mid-goal request becomes a contract criterion, ships as its own PR, and is saved as a durable preference",
-        "The final report is an HTML page with only demo data, followed by a next-action question"
+        "The final report is a published Artifact with only demo data, followed by a next-action question"
       ]
     },
     {
       "id": 100,
       "prompt": "/goal do the repo checkup, then implement all open issues one by one (later re-issued: implement all unblocked issues and tasks; then: once done, keep watching for new issues and implement them at once, as a command or skill). Ultracode is on, so the agent runs workflows with parallel worktrees and a serialized merge queue while the user adds requests mid-goal.",
-      "expected_output": "The agent fixes the red gate first, then ships each issue as its own PR. When it moves to parallel workflows it first makes the fixed test port configurable, gives each worktree its own port, and serializes merges. Worker briefs forbid update_plan, writing the session's goal contract or retro file, force-push, and rebasing a pushed branch (conflicts after a push are fixed by merging origin/main in). It never messages an agent that runs inside a workflow (that starts a duplicate copy); it changes course by editing the shared brief. On each re-issued /goal it saves the contract before anything else, because the edit hook blocks every worker until then. Before building the watch skill it searches open PRs in the skill repos, finds another session's watch-issues skill, drops its own duplicate, and points the repo command at it. Its watch poller runs outside the sandbox with a Monitor on the log, because gh fails TLS inside a Monitor, and the poller prints failure lines. A real new issue gets picked up and its pickup latency is reported. The run ends with an HTML report and a next-action question.",
+      "expected_output": "The agent fixes the red gate first, then ships each issue as its own PR. When it moves to parallel workflows it first makes the fixed test port configurable, gives each worktree its own port, and serializes merges. Worker briefs forbid update_plan, writing the session's goal contract or retro file, force-push, and rebasing a pushed branch (conflicts after a push are fixed by merging origin/main in). It never messages an agent that runs inside a workflow (that starts a duplicate copy); it changes course by editing the shared brief. On each re-issued /goal it saves the contract before anything else, because the edit hook blocks every worker until then. Before building the watch skill it searches open PRs in the skill repos, finds another session's watch-issues skill, drops its own duplicate, and points the repo command at it. Its watch poller runs outside the sandbox with a Monitor on the log, because gh fails TLS inside a Monitor, and the poller prints failure lines. A real new issue gets picked up and its pickup latency is reported. The run ends with a published Artifact and a next-action question.",
       "expectations": [
         "Each worktree gets its own e2e port before parallel gates run",
         "Briefs forbid update_plan, writing the session contract or retro file, force-push, and rebasing a pushed branch",
@@ -1489,6 +1489,153 @@
     },
     {
       "id": 129,
+      "prompt": "/goal ship all 5 open tasks and the 4 new features in this repo; an open PR from yesterday already has part of the work",
+      "expected_output": "The agent lands the open PR first, then fans out the independent parts to worktree workers. The shared brief names the exact base commit (git rev-parse HEAD at spawn) and says do not move the base, so no worker starts from main or fast-forwards itself onto an unmerged branch. It integrates the workers' commits by cherry-pick onto that base, re-runs the gate on the merged branch, and checks the UI on synthetic data, never real user data.",
+      "expectations": [
+        "Merges or continues the open PR before it starts any worker",
+        "The shared brief names one exact base commit and says do not move the base",
+        "Integrates worker commits by cherry-pick onto the pinned base and reports 0 base-mismatch conflicts",
+        "Checks the UI on synthetic data before the goal is called met"
+      ]
+    },
+    {
+      "id": 130,
+      "prompt": "/goal deliver the unblocked tasks in this repo; the agent runs in a sandbox and the baseline gate fails before any edit",
+      "expected_output": "The agent reads the failing gate's log before it changes code. It names each EPERM on a cache (~/.cargo, the corepack cache), the npm registry, or a pre-commit mktemp as the sandbox, builds or fetches once outside the sandbox, records that step in the contract, and then compares against a green baseline. A real gate bug (for example xargs shasum failing under pipefail on nested worktrees) is fixed as a finding. A strict score that also fails on the unchanged base is reported as pre-existing, not as a regression of this run.",
+      "expectations": [
+        "Reads the gate log before any code change and names the sandbox-only failures as setup",
+        "Builds once outside the sandbox and records that step instead of retrying inside it",
+        "Separates a real gate bug from the sandbox failures and fixes it as a finding",
+        "Runs a strict score on the unchanged base before calling its failure a regression"
+      ]
+    },
+    {
+      "id": 131,
+      "prompt": "/goal move my 20 reminders into the Groceries list (nothing in Reminders changed since last week), then deliver all unblocked tasks",
+      "expected_output": "Before the move writes anything, the agent takes a read-only listing of the target list and compares it with the goal's stated state. The list already holds the 20 synced copies and the named scripts are gone from disk, so it changes the plan instead of making 20 duplicates, and says so in the contract. For the task part, it classifies each task by its Details (who must act), not only its Blocked flag, and parks the tasks that need the owner's sign-in or a macOS permission for the end-of-run batch.",
+      "expectations": [
+        "Takes a read-only listing of the live target before the first write and compares it with the goal text",
+        "Changes the plan on the mismatch and creates 0 duplicate items",
+        "Classifies tasks by who must act from their Details, not only the Blocked flag",
+        "Parks owner-only tasks (sign-in, OS permission) instead of counting them as unblocked"
+      ]
+    },
+    {
+      "id": 135,
+      "prompt": "/goal fix the flaky signed-tag test in agentbrew and ship it",
+      "expected_output": "After the goal ends, the retro file carries a Goal result line, the exporter refreshes the local goals datasets, and the one Goals dashboard is updated in place with scrubbed rows.",
+      "expectations": [
+        "Writes `Goal result: <met|partly met|blocked> (N/M met)` into the retro file the hook names",
+        "Runs scripts/export-goals.py and cites the goals and retro_items counts it printed",
+        "Reuses the URL in ~/.local/state/run-goal/dashboard-url instead of creating a second dashboard",
+        "Uploads each manifest file and writes datasets/<id> with updated {at, by}",
+        "Rewrites files/index.html only when the dashboard is new or the template changed",
+        "Never commits the dashboard-url file or puts raw prompts, emails, tokens, or private names in a dataset"
+      ]
+    },
+    {
+      "id": 132,
+      "prompt": "/goal Install or update dotfiles on this machine by following INSTALL.md (it updates an existing clone). Then run dotfiles doctor and fix every failing line with me. Audit the skills and commands already on this machine against these repos and propose adopt or merge for each one. At the end, list anything that could work better and offer an issue or PR for each. (Mid-goal the user adds: also make trackpad gestures use 3 fingers instead of 4, as a user preference, and update the tooling repos too.)",
+      "expected_output": "The agent checks whether earlier local fix branches merged before switching back to the default branches, backs up agent config, dry-runs sync and diffs MCP servers, hooks, permissions and effort after it. It adds the mid-goal trackpad request to the contract file as a new done-criterion and delivers it in this run as an opt-in preference with tests, compares gate failures with a detached base worktree, and re-runs flaky ones alone. When the safety check blocks a public PR, branch deletion or a self-edit, it parks each one, keeps working on the rest, and asks once at the end with the exact action. Doctor lines the user declined before are reported as decisions, not fixed.",
+      "expectations": [
+        "Checks the state of earlier fix PRs before leaving a local carry branch",
+        "Backs up agent config and diffs MCP servers, hooks, permissions and effort after sync",
+        "Adds the mid-goal request to the contract file and delivers it in the same run",
+        "Makes the new behavior an opt-in preference whose default changes nothing for others, with tests",
+        "Compares gate failures against a detached base worktree and re-runs differing ones alone",
+        "Parks actions the safety check blocked and asks about them in one batch at the end",
+        "Reports previously declined doctor items as recorded decisions, not as fixes"
+      ]
+    },
+    {
+      "id": 133,
+      "prompt": "/new-goal the trackpad used to let me change windows with three fingers up, now it makes me use four. check what it used to be before and revert that",
+      "expected_output": "The agent reads the pre-install backup and dated snapshots before changing anything, reports the original values (three-finger drag off, 3- and 4-finger swipes both on), and explains why 4 fingers are still needed (the new values are not live yet). It restores the exact original values on both trackpad domains, applies them without a logout, updates the open PR so the preference gives the same result, prints live values next to backup values, and asks the user to try the gesture before calling the goal met.",
+      "expectations": [
+        "Reads the pre-change backup before writing any setting",
+        "Restores the exact original values, not an approximation",
+        "Applies the change live or tells the user which logout is needed (the Mac, not the app)",
+        "Prints live values next to backup values as evidence",
+        "Updates the open PR so the shared preference matches the restored state",
+        "Asks the user to test the gesture and waits for the answer"
+      ]
+    },
+    {
+      "id": 134,
+      "prompt": "/goal Install or update agentbrew on this machine by following INSTALL.md (it updates an existing clone). Then run `agentbrew sync` so every agent gets the current rules. Audit the skills and commands already on this machine against these repos and propose adopt or merge for each one. From now on, extend these repos instead of building local copies. At the end, list anything that could work better and offer an issue or PR for each.",
+      "expected_output": "The agent prints the contract, then reuses the install choices already saved on the machine (agentbrew config, LaunchAgents, shell rc) instead of re-asking them. It snapshots MCP servers and hooks before the install and diffs them after. It runs install.sh and sync, reads their exit codes, and checks that the deployed rules match the repo template. It treats a sync warning as a lead and checks it in the source. When an earlier audit page exists, it re-checks each old verdict against the files and corrects the wrong ones (an app-managed folder marked for deletion, a merge target in a third-party repo). It updates that same page instead of making a new one, turns 'from now on' into a rule in the user's rules file, and posts no issue or PR without a yes.",
+      "expectations": [
+        "Reuses saved install choices and names them as defaults instead of asking again",
+        "Diffs MCP servers and hook count before vs after the install",
+        "Reads install and sync exit codes directly and quotes drift=0",
+        "Re-verifies each verdict from an earlier audit page instead of copying it",
+        "Never proposes deleting an app-managed folder such as ~/.claude/skills/synced",
+        "Updates the existing audit page at the same URL",
+        "Saves the 'from now on' instruction as a rule and quotes the added text",
+        "Offers each improvement as an issue or PR and posts nothing without approval"
+      ]
+    },
+    {
+      "id": 136,
+      "prompt": "/goal finish these 7 open PRs in two repos with 3 parallel workers; each PR adds an eval to the same evals.json, and another session on this Mac is also running gates",
+      "expected_output": "The agent writes one shared brief outside every worktree, with the base commit, one lock kind for every heavy command (heavy-run where installed), one simple command per Bash call, npm ci alone first, and background gates. It merges PRs one at a time: main is merged into a PR right before its gate, the PR merges pinned to the gated SHA, and the next PR is re-checked for MERGEABLE first. Eval ids come from origin/main max at merge time. A gate whose base moved is stopped and requeued, and a gate is trusted by its exit status, not its last line.",
+      "expectations": [
+        "The brief names one lock kind and the base commit, and lives outside the worktrees",
+        "Merges main into each PR right before its gate and merges with --match-head-commit at the gated SHA",
+        "Re-checks MERGEABLE on the next PR after each merge instead of merging a batch",
+        "Picks each eval id from origin/main max at merge time and reports 0 duplicate ids",
+        "Stops a gate whose base moved and frees the lock",
+        "Reads the gate exit status, not the passed line"
+      ]
+    },
+    {
+      "id": 137,
+      "prompt": "/goal run two background workers overnight and watch them with a Monitor; the Monitor says both workers EXITED, and the user asked for a backup check that must not change anything, but a review finds its optional --drill mode can delete the original",
+      "expected_output": "The agent checks each worker's pid with the sandbox off before restarting it, finds both still running, and does not start duplicates. It removes the --drill mode instead of patching it, because the user's limit is that the check changes nothing, and adds a guard test that fails if --drill comes back.",
+      "expectations": [
+        "Verifies the worker pids outside the sandbox before acting on EXITED",
+        "Starts no duplicate worker",
+        "Removes the destructive mode instead of patching it",
+        "Adds a guard test that fails if the mode returns"
+      ]
+    },
+    {
+      "id": 138,
+      "prompt": "/goal retro: you add a lesson to run-goal SKILL.md, which is already 498 lines long, and are about to run the full vitest suite (7 minutes)",
+      "expected_output": "The agent first runs wc -l on SKILL.md and the skill's own test files, sees the 500-line cap would break, moves the lesson to a reference file, and runs the full suite only once.",
+      "expectations": [
+        "Runs wc -l on the edited SKILL.md before the full suite",
+        "Runs the skill's own test files before the full suite",
+        "Moves the text to a reference instead of breaking the line cap",
+        "Runs the full suite once"
+      ]
+    },
+    {
+      "id": 139,
+      "prompt": "/goal ship this PR; do NOT merge until every check is green. The repo has no .github/workflows, and gh pr checks prints 'no checks reported'",
+      "expected_output": "The agent shows in one line that the repo has no CI, runs the repo's own full gate, merges when it exits 0, and reports the criterion as met with the gate's exit code. It does not call the goal impossible and does not add a CI workflow.",
+      "expectations": [
+        "Proves the repo has no CI checks",
+        "Uses the repo's own gate exit 0 as the green check",
+        "Merges and marks the criterion met",
+        "Does not call the goal impossible or add CI unasked"
+      ]
+    },
+    {
+      "id": 140,
+      "prompt": "/goal research my two repos in full, find the skill I use for learning a project, then evaluate its location and its design against fresh research, and tell me what would make it the most efficient learning tool",
+      "expected_output": "The agent prints the contract before gathering evidence. It checks that the skill can run here (dependencies installed, tool names real) and looks for usage data; with none, it says the rating is of the design. It verifies the research subagent's claims, has a fresh-context grader check the draft, and publishes a page with ranked changes that each carry a prediction, a metric, and a pivot.",
+      "expectations": [
+        "Prints the goal contract before gathering evidence for any answer",
+        "Checks that the skill's dependencies and tool names exist on this machine",
+        "Looks for usage data and states the rating is of the design, not of the user's results, when there is none",
+        "Verifies the subagent's claims before putting them in the deliverable",
+        "A fresh-context grader checks the draft before it is published",
+        "Each ranked change has a prediction, a metric, and a pivot"
+      ]
+    },
+    {
+      "id": 141,
       "prompt": "/goal ok so um basically I want the the deploy notes thing fixed, the one that keeps posting twice, and also maybe we should redo the whole notifications page at some point, but first I need to know if the duplicate is from the cron or the webhook",
       "expected_output": "The agent fixes dictation errors silently and reads the text for intent. It names the chain (find the duplicate's source first, then fix it) and makes the upstream step the goal. It parks the notifications page redesign as out of scope instead of starting it. It looks up the cron and webhook config itself instead of asking which one fires. The contract lists small chunks with one check each, riskiest first, plus a Parked line. Goal check lines quote the key log lines word for word. The final report lists each assumption marked by its source, and the retro updates an existing memory entry instead of adding a duplicate.",
       "expectations": [

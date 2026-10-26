@@ -40,6 +40,9 @@ never the installed mirror.
 - `readlink -f ~/.claude/skills/<name>` shows a symlink target, for skills
   linked by hand or by a project.
 - `git -C <source dir> remote get-url origin` shows who owns the repo.
+- agentbrew installs copies, not symlinks, so find run-goal's own local
+  checkout with `git -C <dir> remote get-url origin` on candidate folders
+  (for example `find ~ -maxdepth 4 -type d -name agentbrew`).
 
 ## 5. Route the edit by owner
 
@@ -62,6 +65,12 @@ Keep each edit small. Every skill used gets one update:
   that behavior stays tested. This is a real update, not churn.
 Follow the target repo's rules (`AGENTS.md`): tests, docs, commit style, and
 leak checks.
+
+Check fast before the full suite. A retro edit can push SKILL.md past its
+500-line cap, and only the full suite (minutes) used to catch it. Before
+the full suite, run `wc -l` on each edited SKILL.md and the skill's own test
+files (`npx vitest run src/skills/<skill>-*.test.ts`). Then run the full
+suite once.
 
 ### Evals with skill-creator in a goal run
 
@@ -94,8 +103,8 @@ Keep the memory clean while you store:
   final value with its date. The next run then has a baseline.
 
 When the user corrected how you work, or a standing rule turned out to be
-missing, update the user's rules file (`CLAUDE.md`, `AGENTS.md`) too. Keep it
-short: each rule must change behavior.
+missing, update the source of the user's rules too: `AGENTS.md`, or the file
+that generates `CLAUDE.md`. Keep it short: each rule must change behavior.
 
 A skill that worked as written still gets an edit, such as a new eval case.
 An existing eval that already covers the run is not an update. The

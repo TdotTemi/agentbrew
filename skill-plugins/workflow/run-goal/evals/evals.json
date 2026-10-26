@@ -1488,7 +1488,7 @@
       ]
     },
     {
-      "id": 128,
+      "id": 129,
       "prompt": "/goal Install or update dotfiles on this machine by following INSTALL.md (it updates an existing clone). Then run dotfiles doctor and fix every failing line with me. Audit the skills and commands already on this machine against these repos and propose adopt or merge for each one. At the end, list anything that could work better and offer an issue or PR for each. (Mid-goal the user adds: also make trackpad gestures use 3 fingers instead of 4, as a user preference, and update the tooling repos too.)",
       "expected_output": "The agent checks whether earlier local fix branches merged before switching back to the default branches, backs up agent config, dry-runs sync and diffs MCP servers, hooks, permissions and effort after it. It adds the mid-goal trackpad request to the contract file as a new done-criterion and delivers it in this run as an opt-in preference with tests, compares gate failures with a detached base worktree, and re-runs flaky ones alone. When the safety check blocks a public PR, branch deletion or a self-edit, it parks each one, keeps working on the rest, and asks once at the end with the exact action. Doctor lines the user declined before are reported as decisions, not fixed.",
       "expectations": [
@@ -1502,7 +1502,7 @@
       ]
     },
     {
-      "id": 129,
+      "id": 130,
       "prompt": "/new-goal the trackpad used to let me change windows with three fingers up, now it makes me use four. check what it used to be before and revert that",
       "expected_output": "The agent reads the pre-install backup and dated snapshots before changing anything, reports the original values (three-finger drag off, 3- and 4-finger swipes both on), and explains why 4 fingers are still needed (the new values are not live yet). It restores the exact original values on both trackpad domains, applies them without a logout, updates the open PR so the preference gives the same result, prints live values next to backup values, and asks the user to try the gesture before calling the goal met.",
       "expectations": [

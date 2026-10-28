@@ -56,10 +56,8 @@ describe("buildWorkPlan", () => {
     const plan = buildWorkPlan(state(), [plugin("acme", "git@git.example.com:acme/agentbrew-acme.git")], {
       pluginCheckouts: ["~/apps/careerbrew-acme"],
     });
-    expect(plan.pluginReview.checkouts).toEqual([
-      "~/apps/careerbrew-acme",
-      "git@git.example.com:acme/agentbrew-acme.git",
-    ]);
+    expect(plan.pluginReview.checkouts).toEqual(["~/apps/careerbrew-acme", "~/.local/share/agentbrew/plugins/acme"]);
+    expect(plan.pluginReview.checkouts.join(" ")).not.toContain("git@");
     expect(plan.pluginReview.how).toMatch(/main tool/);
     expect(plan.pluginReview.how).toMatch(/says yes/);
     expect(formatWorkPlan(plan)).toMatch(/Plugin review/);
@@ -72,8 +70,28 @@ describe("buildWorkPlan", () => {
       ["/r"],
       (d) => dirs[d] ?? [],
       (d) => repos.has(d),
+      () => true,
     );
     expect(found).toEqual(["/r/careerbrew-acme"]);
+  });
+
+  it("skips a linked worktree, a second clone of the tool, and a sibling with no plugin file (#617)", () => {
+    const base = mkdtempSync(join(tmpdir(), "work-plugins-"));
+    for (const rel of ["careerbrew/.git", "careerbrew-acme/.git", "careerbrew-notes/.git", "careerbrew-pr45"]) {
+      mkdirSync(join(base, rel), { recursive: true });
+    }
+    writeFileSync(join(base, "careerbrew-acme/Agentfile.yaml"), "commands:\n  - ./commands\n");
+    writeFileSync(join(base, "careerbrew-pr45/.git"), "gitdir: /elsewhere/.git/worktrees/pr45\n");
+    writeFileSync(join(base, "careerbrew-pr45/Agentfile.yaml"), "commands:\n  - ./commands\n");
+    mkdirSync(join(base, "careerbrew-old/.git"), { recursive: true });
+    mkdirSync(join(base, "careerbrew-tope/.git"), { recursive: true });
+    const origin = (url: string) => `[core]\n\tbare = false\n[remote "origin"]\n\turl = ${url}\n`;
+    writeFileSync(join(base, "careerbrew/.git/config"), origin("git@example.com:me/careerbrew.git"));
+    writeFileSync(join(base, "careerbrew-old/.git/config"), origin("git@example.com:me/careerbrew.git"));
+    writeFileSync(join(base, "careerbrew-old/Agentfile.yaml"), "commands:\n  - ./commands\n");
+    writeFileSync(join(base, "careerbrew-tope/careerbrew-plugin.yaml"), "name: tope\n");
+    expect(findPluginCheckouts([base])).toEqual([`${base}/careerbrew-acme`, `${base}/careerbrew-tope`]);
+    rmSync(base, { recursive: true, force: true });
   });
 
   it("prints a human plan with the steps, watch mode, and end of day", () => {

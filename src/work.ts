@@ -8,11 +8,11 @@
  * order the Agentfiles were applied. state.workSteps records which
  * Agentfile declared each step (the same ownership rule as `commands:` dirs).
  */
-import { existsSync, readdirSync, readFileSync } from "node:fs";
+import { existsSync, readdirSync, readFileSync, realpathSync } from "node:fs";
 import { homedir } from "node:os";
-import { join } from "node:path";
+import { dirname, join, resolve } from "node:path";
 import chalk from "chalk";
-import type { AgentfileWorkStep } from "./agentfile.js";
+import { type Agentfile, type AgentfileWorkStep, loadAgentfile } from "./agentfile.js";
 import { type PluginLockEntry, readLock } from "./lock.js";
 import { loadState } from "./state.js";
 import type { AgentBrewState, WorkStepEntry } from "./types.js";
@@ -105,6 +105,56 @@ export function findPluginCheckouts(
     }
   }
   return out;
+}
+
+/** The git checkout that holds `path`: the nearest folder at or above it with a `.git`. */
+function enclosingRepo(path: string, isRepo: (dir: string) => boolean, home = homedir()): string | undefined {
+  for (let dir = path; dir !== dirname(dir) && dir !== home; dir = dirname(dir)) {
+    if (isRepo(dir)) return dir;
+  }
+  return undefined;
+}
+
+/**
+ * The app checkouts a plugin works with (#600), from its Agentfile: the
+ * `workCheckouts:` list (any path, `~` allowed), plus the git checkout of each
+ * local `sources:`, `commands:`, and `agents:` path that sits outside the
+ * plugin's own checkout. A `workCheckouts:` entry that is not a git checkout
+ * is skipped. Auto-detected ones count only under `home`, so a
+ * source in a system folder never adds an unrelated repo. A folder name is
+ * never used. Paths come back as `~/...` under the home folder.
+ */
+export function findParentCheckouts(
+  pluginDir: string,
+  load: (dir: string) => Agentfile | undefined = loadAgentfile,
+  isRepo: (dir: string) => boolean = (dir) => existsSync(join(dir, ".git")),
+  home = homedir(),
+): string[] {
+  const own = expandHome(pluginDir);
+  const ownRepo = enclosingRepo(own, isRepo, home);
+  const file = load(own);
+  const found = new Set<string>();
+  for (const entry of [...(file?.sources ?? []), ...(file?.commands ?? []), ...(file?.agents ?? [])]) {
+    if (!/^[.~/]/.test(entry)) continue;
+    const repo = enclosingRepo(resolve(own, expandHome(entry)), isRepo, home);
+    if (repo?.startsWith(`${home}/`) && repo !== own && repo !== ownRepo) found.add(repo);
+  }
+  for (const entry of file?.workCheckouts ?? []) {
+    const repo = resolve(own, expandHome(entry));
+    // A missing folder or a folder that is not a checkout cannot be fetched.
+    if (isRepo(repo)) found.add(repo);
+  }
+  return [...found].map((repo) => (repo.startsWith(`${home}/`) ? `~${repo.slice(home.length)}` : repo));
+}
+
+/** One real path per folder, so `~/x` and `/Users/me/x` (or a symlink to it) match. */
+function canonicalPath(path: string): string {
+  const full = resolve(expandHome(path));
+  try {
+    return realpathSync(full);
+  } catch {
+    return full;
+  }
 }
 
 /** Step status on the dashboard (#510). */
@@ -283,9 +333,9 @@ function nextStage(remaining: StageInput[], isDone: (step: string) => boolean): 
   return [remaining.find(ready) ?? (remaining[0] as StageInput)];
 }
 
-/** What `/work` does on each watch pass for repo updates (#516). */
+/** What `/work` does for repo updates: before the first step and on each watch pass (#516, #600). */
 export const REPO_WATCH_HOW =
-  "On each watch pass, fetch the remote of each checkout in `checkouts`. When its branch has new commits and the checkout is clean, fast-forward it (never merge, rebase, or reset), then run `agentbrew sync` once and each `refresh` step. Skip a checkout with local changes or a diverged branch and say so in one line. Print one line per update.";
+  "Before the first step and on each watch pass, fetch the remote of each checkout in `checkouts`. When its branch has new commits and the checkout is clean, fast-forward it (`git merge --ff-only @{u}` only; never a merge commit, rebase, or reset), then run `agentbrew sync` once and each `refresh` step. Print one line per checkout: updated, current, or skipped (<reason>: dirty, diverged, no upstream, detached HEAD, failed fetch).";
 
 /** Drop entries whose Agentfile dir is gone (a deleted worktree), so stale steps neither run nor shadow current ones (#515). */
 export function pruneMissingWorkSteps(
@@ -299,7 +349,13 @@ export function pruneMissingWorkSteps(
 export function buildWorkPlan(
   state: AgentBrewState | undefined,
   plugins: PluginLockEntry[],
-  options: { date?: Date; stateHome?: string; dirExists?: (dir: string) => boolean; pluginCheckouts?: string[] } = {},
+  options: {
+    date?: Date;
+    stateHome?: string;
+    dirExists?: (dir: string) => boolean;
+    pluginCheckouts?: string[];
+    parentsOf?: (agentfileDir: string) => string[];
+  } = {},
 ): WorkPlan {
   const all = state?.workSteps ?? [];
   const current = pruneMissingWorkSteps(all, options.dirExists ?? (() => true));
@@ -321,6 +377,16 @@ export function buildWorkPlan(
   for (const step of DEFAULT_WORK_STEPS) add(step, "agentbrew");
   for (const entry of current) if (!entry.refresh) add(entry.step, entry.agentfile, entry);
   const refresh = [...new Set(current.filter((e) => e.refresh).map((e) => e.step))];
+  const parentsOf = options.parentsOf ?? ((d: string) => findParentCheckouts(d));
+  const seenPaths = new Set<string>();
+  const checkouts = [...new Set(current.map((e) => e.agentfile))]
+    .flatMap((dir) => [dir, ...parentsOf(dir)])
+    .filter((dir) => {
+      const key = canonicalPath(dir);
+      if (seenPaths.has(key)) return false;
+      seenPaths.add(key);
+      return true;
+    });
   return {
     staleWorkSteps,
     ...machineRule(plugins),
@@ -333,7 +399,7 @@ export function buildWorkPlan(
     watch:
       "After the steps, keep watching: re-run a step when its input changes, print one line per update, and stop when the user says end of day.",
     repoWatch: {
-      checkouts: [...new Set(current.map((e) => e.agentfile))],
+      checkouts,
       refresh,
       how: REPO_WATCH_HOW,
     },
@@ -379,7 +445,9 @@ export function formatWorkPlan(plan: WorkPlan): string {
   }
   if (plan.repoWatch.checkouts.length > 0) {
     const refresh = plan.repoWatch.refresh.length > 0 ? `; then ${plan.repoWatch.refresh.join(", ")}` : "";
-    lines.push(`Repo updates: watch ${plan.repoWatch.checkouts.join(", ")}; fast-forward, agentbrew sync${refresh}.`);
+    lines.push(
+      `Repo updates: fast-forward ${plan.repoWatch.checkouts.join(", ")} before step 1 and on each watch pass; agentbrew sync${refresh}.`,
+    );
   }
   lines.push("", `End of day: ${plan.endOfDay.join(" ")}`);
   return lines.join("\n");

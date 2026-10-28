@@ -1,6 +1,6 @@
 /** `agentbrew work` (#440): the ordered day plan and the machine rule. */
 import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
-import { tmpdir } from "node:os";
+import { homedir, tmpdir } from "node:os";
 import { join } from "node:path";
 import { describe, expect, it } from "vitest";
 import type { PluginLockEntry } from "./lock.js";
@@ -10,6 +10,7 @@ import {
   buildWorkStages,
   DEFAULT_WORK_STEPS,
   END_OF_DAY_STEP,
+  findParentCheckouts,
   findPluginCheckouts,
   formatWorkPlan,
   mergeWorkSteps,
@@ -112,14 +113,130 @@ describe("repo-update watch (#516)", () => {
         { step: "/acme-refresh", agentfile: "~/apps/agentbrew-acme", refresh: true },
       ]),
       [],
+      { parentsOf: () => [] },
     );
     expect(plan.steps.map((s) => s.step)).not.toContain("/acme-refresh");
     expect(plan.repoWatch.checkouts).toEqual(["~/apps/dotfiles", "~/apps/agentbrew-acme"]);
     expect(plan.repoWatch.refresh).toEqual(["/acme-refresh"]);
     expect(plan.repoWatch.how).toMatch(/fast-forward/);
     expect(plan.repoWatch.how).toMatch(/agentbrew sync/);
-    expect(plan.repoWatch.how).toMatch(/local changes/);
-    expect(formatWorkPlan(plan)).toContain("Repo updates: watch ~/apps/dotfiles, ~/apps/agentbrew-acme");
+    expect(plan.repoWatch.how).toMatch(/dirty/);
+    expect(formatWorkPlan(plan)).toContain(
+      "Repo updates: fast-forward ~/apps/dotfiles, ~/apps/agentbrew-acme before step 1",
+    );
+  });
+});
+
+describe("start-of-day refresh of parent app checkouts (#600)", () => {
+  /** A scratch folder with git checkouts (an empty `.git` folder is enough) and Agentfiles. */
+  function scratch(layout: Record<string, string | null>): string {
+    const base = mkdtempSync(join(tmpdir(), "work-parents-"));
+    for (const [rel, agentfile] of Object.entries(layout)) {
+      mkdirSync(join(base, rel, ".git"), { recursive: true });
+      if (agentfile !== null) writeFileSync(join(base, rel, "Agentfile.yaml"), agentfile);
+    }
+    return base;
+  }
+
+  it("finds the app checkout a plugin deploys from, even for a worktree or a plugin in another folder", () => {
+    const base = scratch({ app: null, "wt/plugin-fix": null, "other/plugin": null });
+    const sources = `sources:\n  - ${base}/app/skills\ncommands:\n  - ./commands\n`;
+    writeFileSync(join(base, "wt/plugin-fix/Agentfile.yaml"), sources);
+    writeFileSync(join(base, "other/plugin/Agentfile.yaml"), sources);
+    expect(findParentCheckouts(join(base, "wt/plugin-fix"), undefined, undefined, base)).toEqual(["~/app"]);
+    expect(findParentCheckouts(join(base, "other/plugin"), undefined, undefined, base)).toEqual(["~/app"]);
+    rmSync(base, { recursive: true, force: true });
+  });
+
+  it("does not guess from a dashed name: a separate app beside another one has no parent", () => {
+    const base = scratch({ app: null, "app-learn": "sources:\n  - ./skills\ncommands:\n  - ./commands\n" });
+    expect(findParentCheckouts(join(base, "app-learn"), undefined, undefined, base)).toEqual([]);
+    rmSync(base, { recursive: true, force: true });
+  });
+
+  it("finds the checkout that encloses a nested source path, and lists it once", () => {
+    const base = scratch({ app: null, plugin: null });
+    writeFileSync(
+      join(base, "plugin/Agentfile.yaml"),
+      `sources:\n  - ${base}/app/skills/x\ncommands:\n  - ${base}/app/commands\n`,
+    );
+    expect(findParentCheckouts(join(base, "plugin"), undefined, undefined, base)).toEqual(["~/app"]);
+    rmSync(base, { recursive: true, force: true });
+  });
+
+  it("lists the parent app checkout of each plugin that adds steps, and tells the agent to fast-forward before step one", () => {
+    const plan = buildWorkPlan(state([{ step: "/app-live", agentfile: "/r/plugin" }]), [], {
+      parentsOf: (dir) => (dir === "/r/plugin" ? ["/r/app"] : []),
+    });
+    expect(plan.repoWatch.checkouts).toEqual(["/r/plugin", "/r/app"]);
+    expect(plan.repoWatch.how).toMatch(/^Before the first step and on each watch pass/);
+    expect(plan.repoWatch.how).toMatch(/fast-forward/);
+    expect(plan.repoWatch.how).toMatch(/updated, current, or skipped \(<reason>/);
+    for (const reason of ["dirty", "diverged", "no upstream", "detached HEAD", "failed fetch"]) {
+      expect(plan.repoWatch.how).toContain(reason);
+    }
+    expect(formatWorkPlan(plan)).toContain("Repo updates: fast-forward /r/plugin, /r/app before step 1");
+  });
+
+  it("adds the checkouts a plugin lists in workCheckouts, for a plugin that deploys only its own files", () => {
+    const base = scratch({ app: null, plugin: null });
+    writeFileSync(
+      join(base, "plugin/Agentfile.yaml"),
+      `sources:\n  - ./skills\nworkCheckouts:\n  - ${base}/app\n  - ../app\n`,
+    );
+    expect(findParentCheckouts(join(base, "plugin"), undefined, undefined, base)).toEqual(["~/app"]);
+    rmSync(base, { recursive: true, force: true });
+  });
+
+  it("skips a workCheckouts entry that is missing or is not a git checkout", () => {
+    const base = scratch({ app: null, plugin: null });
+    mkdirSync(join(base, "plain"), { recursive: true });
+    writeFileSync(
+      join(base, "plugin/Agentfile.yaml"),
+      `sources:\n  - ./skills\nworkCheckouts:\n  - ${base}/gone\n  - ${base}/plain\n  - ${base}/app\n`,
+    );
+    expect(findParentCheckouts(join(base, "plugin"), undefined, undefined, base)).toEqual(["~/app"]);
+    rmSync(base, { recursive: true, force: true });
+  });
+
+  it("accepts an auto-detected parent only under the home folder; workCheckouts may be anywhere", () => {
+    const outside = scratch({ "opt/homebrew": null });
+    const home = scratch({ plugin: null });
+    writeFileSync(join(home, "plugin/Agentfile.yaml"), `sources:\n  - ${outside}/opt/homebrew/share/skills\n`);
+    expect(findParentCheckouts(join(home, "plugin"), undefined, undefined, home)).toEqual([]);
+    writeFileSync(
+      join(home, "plugin/Agentfile.yaml"),
+      `sources:\n  - ${outside}/opt/homebrew/share/skills\nworkCheckouts:\n  - ${outside}/opt/homebrew\n`,
+    );
+    expect(findParentCheckouts(join(home, "plugin"), undefined, undefined, home)).toEqual([
+      join(outside, "opt/homebrew"),
+    ]);
+    rmSync(home, { recursive: true, force: true });
+    rmSync(outside, { recursive: true, force: true });
+  });
+
+  it("lists one checkout once when `~` and absolute spellings name the same folder", () => {
+    const plan = buildWorkPlan(
+      state([
+        { step: "/a", agentfile: "~/apps/p1" },
+        { step: "/b", agentfile: join(homedir(), "apps/p1") },
+      ]),
+      [],
+      { parentsOf: () => [join(homedir(), "apps/app"), "~/apps/app"] },
+    );
+    expect(plan.repoWatch.checkouts).toEqual(["~/apps/p1", join(homedir(), "apps/app")]);
+  });
+
+  it("lists a shared parent once", () => {
+    const plan = buildWorkPlan(
+      state([
+        { step: "/a", agentfile: "/r/p1" },
+        { step: "/b", agentfile: "/r/p2" },
+      ]),
+      [],
+      { parentsOf: () => ["/r/app"] },
+    );
+    expect(plan.repoWatch.checkouts).toEqual(["/r/p1", "/r/app", "/r/p2"]);
   });
 });
 

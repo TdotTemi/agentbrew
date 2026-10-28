@@ -24,6 +24,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- `/work` lists each app checkout a plugin works with (from its Agentfile paths and `workCheckouts:`) in `repoWatch.checkouts` and fast-forwards them before the first step (#600).
 - The wrap-up skill's `open-work.sh` tags a branch whose added lines are
   already on the default branch (90% or more, `OPEN_WORK_LANDED_PCT`) as
   "likely landed: look, then delete it". Such a branch matched no squash

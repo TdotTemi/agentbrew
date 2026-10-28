@@ -171,6 +171,19 @@
 
 ## P2
 
+- [ ] Triage leftover branches, worktrees, and a stash
+  - **ID**: leftover-branches-2026-10-28
+  - **Tags**: git, hygiene
+  - **Details**: On 2026-10-28 the checkout had 5 local branches whose remote is gone (`fix/wrap-up-likely-landed`, `docs/watch-monitor-sandbox`, `feat/work-lean`, `feat/600-parent-checkouts`, `feat/work-stats`), 2 stale ones (`skill/watch-issues-base-red` behind 60, `feat/grind-watch-mode` ahead 2 and behind 193), `stash@{0}` from `feat/work-refresh-parents`, a detached worktree under `.claude/worktrees/`, and 5 worktrees under `~/apps/tooling/wt.noindex/` for gone branches. Leave the branches of open PRs #631 and #607 alone. For each other item, compare with `main`, salvage unmerged work into a task or PR (`grind-watch-mode` has 2 unpushed commits), then remove it (the `wrap-up` skill's `scripts/open-work.sh` lists them).
+  - **Files**: none (git state only)
+  - **Output**: cleanup
+  - **Acceptance**: only `main`, the open-PR branches, and claimed branches remain; the stash is applied or filed; no worktree points at a gone branch.
+  - **Hypothesis**: clearing leftovers stops agents reading stale code: worktrees drop from 9 to at most 3, stashes from 1 to 0.
+  - **Measurement**: `git worktree list | wc -l; git stash list | wc -l`
+  - **Success**: at most 3 worktrees and 0 stashes.
+  - **Pivot**: an item holds work no one claims: file it as a task and keep it.
+  - **Anchor**: Forsgren, Humble & Kim 2018 (small batches, short-lived branches).
+
 - [ ] Report Hallmark's render wait that never ends on apps that poll
   - **ID**: hallmark-render-wait-upstream
   - **Blocked**: owner step: say yes to a public issue on nutlope/hallmark (a third-party repo); the `report-upstream` skill drafts and scrubs it first

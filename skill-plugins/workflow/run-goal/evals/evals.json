@@ -1955,6 +1955,16 @@
         "Real picks are read one by one after synthetic tests pass, and a found defect gets a red test first",
         "Votes and Going stay the users' own: write tests run on a scratch copy of the store"
       ]
+    },
+    {
+      "id": 169,
+      "prompt": "/goal fix my MCP connectors, and add a doctor check at the start of /work",
+      "expected_output": "The agent fixes the connector config, then checks it where the desktop app runs: it reads the launchd env and PATH the app gets, not only a shell probe. It sees the app reads env only at launch, so it names the app restart as a user step and does not mark the connector criterion met until the app shows the connector working.",
+      "expectations": [
+        "The check reads the launchd env and PATH the desktop app uses, not only a shell probe",
+        "A shell probe that passes is not taken as proof the app works",
+        "The needed app restart or reconnect is reported as a user step, not as met"
+      ]
     }
   ]
 }

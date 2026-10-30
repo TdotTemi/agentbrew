@@ -155,6 +155,45 @@
 
 ## P1
 
+- [ ] Deploy slash commands to Codex as custom prompts
+  - **ID**: codex-commands-dir
+  - **Tags**: codex, sync
+  - **Details**: `src/core/agents.yaml:147-158` gives `codex` no `commandsDir`, so none of the 17 commands in `~/.claude/commands` (for example `/careerbrew`, `/ship-it`) reach Codex. Codex reads custom prompts from `~/.codex/prompts/*.md` (`/prompts:<name>`). Add `commandsDir: ~/.codex/prompts` and a `commandTransform` for Codex (strip Claude-only frontmatter, map `$ARGUMENTS`).
+  - **Files**: `src/core/agents.yaml`, `src/sync/`
+  - **Output**: code
+  - **Acceptance**: after `agentbrew sync`, `ls ~/.codex/prompts | wc -l` equals the deployed Claude command count, and `/prompts:careerbrew` runs in `codex`.
+  - **Hypothesis**: commands reachable in Codex go from 0 to 17 of 17, because sync starts writing them.
+  - **Measurement**: `ls ~/.codex/prompts/*.md | wc -l` vs `ls ~/.claude/commands/*.md | wc -l` after `agentbrew sync`.
+  - **Success**: counts match (17/17).
+  - **Pivot**: if Codex prompts cannot take arguments the commands need, ship them as Codex skills instead.
+  - **Anchor**: Basili, Caldiera & Rombach 1994 (GQM); Codex CLI custom prompts docs.
+
+- [ ] Manage Codex hooks and subagents from agentbrew
+  - **ID**: codex-hooks-agents
+  - **Tags**: codex, hooks, agents
+  - **Details**: The `codex` entry (`src/core/agents.yaml:147-158`) has no `hooksFile` and no `supportedSkillFeatures`. `~/.codex/hooks.json` is hand-managed (only a dotfiles endpoint-path hook), so agentbrew hooks such as goal-contract-before-edit never run in Codex. `agentsDir: ~/.codex/agents` is set but the folder is empty on this Mac (checked 2026-10-30, codex-cli 0.166.0) while Claude also has 0 agents, so add a sync test that would catch a real drop. Wire `hooksFile: ~/.codex/hooks.json` with the Codex event names, merge with existing entries, and declare which skill features Codex supports.
+  - **Files**: `src/core/agents.yaml`, `src/sync/`, tests
+  - **Output**: code
+  - **Acceptance**: `agentbrew sync` writes agentbrew hooks into `~/.codex/hooks.json` without dropping the dotfiles hook; a test pins the merge.
+  - **Hypothesis**: agentbrew hooks active in Codex go from 0 to all hooks whose events Codex has.
+  - **Measurement**: `jq '[.hooks[][]?.hooks[]?.command] | length' ~/.codex/hooks.json` before and after sync, plus `npm test`.
+  - **Success**: every agentbrew hook with a Codex-equivalent event is present; dotfiles hook kept.
+  - **Pivot**: if Codex hook events cannot express a hook, list it as a Claude-only carve-out in docs instead of faking it.
+  - **Anchor**: Basili, Caldiera & Rombach 1994 (GQM).
+
+- [ ] Add a Codex doctor and support matrix doc
+  - **ID**: codex-doctor-matrix
+  - **Tags**: codex, doctor, docs
+  - **Details**: On 2026-10-30 `codex` was missing on this Mac while `~/.codex` was fully synced: agentbrew syncs into an agent dir without checking that the agent binary runs. Add a status/doctor line per agent (binary on PATH, version, logged in via `codex login status`) and a docs table of what agentbrew ships per agent (rules, skills, MCP, model, commands, hooks, agents) so gaps like codex-commands-dir are visible.
+  - **Files**: `src/`, `docs/`
+  - **Output**: code + docs
+  - **Acceptance**: `agentbrew status` flags a synced agent whose binary is missing; docs table exists and a test keeps it in step with `agents.yaml`.
+  - **Hypothesis**: "agent dir synced but binary missing" goes from silent to reported every run.
+  - **Measurement**: run `agentbrew status` with `codex` removed from PATH (`PATH=/usr/bin:/bin`) and check for the warning; `npm test`.
+  - **Success**: warning shown; table test green.
+  - **Pivot**: if per-agent binary checks are slow (>1 s total), run them only in `agentbrew doctor`.
+  - **Anchor**: Basili, Caldiera & Rombach 1994 (GQM).
+
 - [ ] Agents wait on events, not polling loops
   - **ID**: nudge-polling-loops-to-blocking-waits
   - **Tags**: hooks, perf, agents

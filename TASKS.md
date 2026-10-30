@@ -184,7 +184,7 @@
 - [ ] Add a Codex doctor and support matrix doc
   - **ID**: codex-doctor-matrix
   - **Tags**: codex, doctor, docs
-  - **Details**: On 2026-10-30 `codex` was missing on this Mac while `~/.codex` was fully synced: agentbrew syncs into an agent dir without checking that the agent binary runs. Add a status/doctor line per agent (binary on PATH, version, logged in via `codex login status`) and a docs table of what agentbrew ships per agent (rules, skills, MCP, model, commands, hooks, agents) so gaps like codex-commands-dir are visible.
+  - **Details**: On 2026-10-30 `codex` was missing on this Mac while `~/.codex` was fully synced: agentbrew syncs into an agent dir without checking that the agent binary runs. Add a status/doctor line per agent (binary on PATH, version, logged in via `codex login status`) and a docs table of what agentbrew ships per agent (rules, skills, MCP, model, commands, hooks, agents) so gaps like codex-commands-dir are visible. Also: 26 skill folders in ~/.claude/skills (travel set such as google-flights, awardwallet, plan-days) are hand-placed real folders, not agentbrew-managed, so they never reach ~/.codex/skills (62 vs 88 on 2026-10-30). Report unmanaged per-agent skill folders and offer to adopt them as a local source. Detect the Codex GUI as ChatGPT.app (the standalone Codex app was discontinued 2026-07-09).
   - **Files**: `src/`, `docs/`
   - **Output**: code + docs
   - **Acceptance**: `agentbrew status` flags a synced agent whose binary is missing; docs table exists and a test keeps it in step with `agents.yaml`.
